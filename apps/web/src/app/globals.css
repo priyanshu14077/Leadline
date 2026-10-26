@@ -1,0 +1,294 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+/* Dark mode follows the operating system. There is no in-app toggle on purpose. */
+@custom-variant dark (@media (prefers-color-scheme: dark));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-archivo);
+  --font-mono: var(--font-azeret);
+  --font-heading: var(--font-archivo);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+
+  /* LeadLine world: registered post. */
+  --color-surface: var(--surface);
+  --color-rail: var(--rail);
+  --color-rail-foreground: var(--rail-foreground);
+  --color-rail-muted: var(--rail-muted);
+  --color-brand: var(--brand);
+  --color-brand-soft: var(--brand-soft);
+  --color-ok: var(--ok);
+  --color-ok-soft: var(--ok-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-overdue: var(--overdue);
+  --color-overdue-soft: var(--overdue-soft);
+  --color-hub: var(--hub);
+  --color-hub-soft: var(--hub-soft);
+  --color-stage-new: var(--stage-new);
+  --color-stage-contacted: var(--stage-contacted);
+  --color-stage-consult: var(--stage-consult);
+  --color-stage-accepted: var(--stage-accepted);
+  --color-stage-lost: var(--stage-lost);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+:root {
+  --radius: 0.5rem;
+
+  /* Registered-envelope stock: cool paper, blue-black postmark ink. */
+  --background: oklch(0.982 0.004 255);
+  --surface: oklch(0.955 0.009 258);
+  --foreground: oklch(0.23 0.035 262);
+  --card: oklch(1 0 0);
+  --card-foreground: var(--foreground);
+  --popover: oklch(1 0 0);
+  --popover-foreground: var(--foreground);
+  --muted: oklch(0.94 0.01 258);
+  --muted-foreground: oklch(0.46 0.03 260);
+  --secondary: oklch(0.94 0.012 258);
+  --secondary-foreground: var(--foreground);
+  --accent: oklch(0.94 0.02 262);
+  --accent-foreground: var(--foreground);
+  --border: oklch(0.885 0.013 258);
+  --input: oklch(0.86 0.015 258);
+
+  /* Registered blue carries the shell and every primary action. */
+  --brand: oklch(0.44 0.17 263);
+  --brand-soft: oklch(0.94 0.035 263);
+  --primary: var(--brand);
+  --primary-foreground: oklch(0.985 0.004 255);
+  --ring: oklch(0.52 0.19 263);
+  --rail: oklch(0.33 0.13 264);
+  --rail-foreground: oklch(0.97 0.01 255);
+  --rail-muted: oklch(0.82 0.05 262);
+
+  /* State vocabulary: each colour means one thing. Red is overdue or failure, nothing else. */
+  --ok: oklch(0.5 0.12 155);
+  --ok-soft: oklch(0.95 0.04 155);
+  --warn: oklch(0.52 0.12 65);
+  --warn-soft: oklch(0.95 0.05 80);
+  --overdue: oklch(0.53 0.2 27);
+  --overdue-soft: oklch(0.95 0.035 25);
+  --destructive: var(--overdue);
+  --hub: oklch(0.55 0.1 195);
+  --hub-soft: oklch(0.94 0.035 195);
+
+  /* Stages progress in registered-blue ink: pale to full strength. Green/amber/red belong to the clock. */
+  --stage-new: oklch(0.55 0.025 260);
+  --stage-contacted: oklch(0.72 0.09 263);
+  --stage-consult: oklch(0.56 0.15 263);
+  --stage-accepted: oklch(0.36 0.16 264);
+  --stage-lost: oklch(0.8 0.01 260);
+
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: oklch(0.175 0.022 262);
+    --surface: oklch(0.205 0.026 262);
+    --foreground: oklch(0.94 0.01 255);
+    --card: oklch(0.235 0.028 262);
+    --popover: oklch(0.24 0.028 262);
+    --muted: oklch(0.26 0.026 262);
+    --muted-foreground: oklch(0.74 0.025 258);
+    --secondary: oklch(0.27 0.03 262);
+    --accent: oklch(0.29 0.04 262);
+    --border: oklch(1 0 0 / 11%);
+    --input: oklch(1 0 0 / 16%);
+
+    --brand: oklch(0.72 0.12 262);
+    --brand-soft: oklch(0.3 0.07 263);
+    --primary: oklch(0.62 0.15 263);
+    --primary-foreground: oklch(0.99 0 0);
+    --ring: oklch(0.72 0.13 262);
+    --rail: oklch(0.25 0.07 264);
+    --rail-foreground: oklch(0.96 0.01 255);
+    --rail-muted: oklch(0.78 0.04 262);
+
+    --ok: oklch(0.78 0.13 155);
+    --ok-soft: oklch(0.3 0.06 155);
+    --warn: oklch(0.82 0.13 80);
+    --warn-soft: oklch(0.32 0.06 75);
+    --overdue: oklch(0.72 0.16 25);
+    --overdue-soft: oklch(0.32 0.08 25);
+    --hub: oklch(0.78 0.1 195);
+    --hub-soft: oklch(0.3 0.05 195);
+
+    --stage-new: oklch(0.7 0.025 260);
+    --stage-contacted: oklch(0.5 0.09 263);
+    --stage-consult: oklch(0.66 0.13 263);
+    --stage-accepted: oklch(0.82 0.1 262);
+    --stage-lost: oklch(0.42 0.015 260);
+
+    color-scheme: dark;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html {
+    @apply font-sans;
+    font-optical-sizing: auto;
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "ss01";
+  }
+  ::selection {
+    background: color-mix(in oklch, var(--brand) 28%, transparent);
+    color: inherit;
+  }
+  input,
+  textarea {
+    caret-color: var(--brand);
+  }
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+  a {
+    text-underline-offset: 0.2em;
+    text-decoration-thickness: 1px;
+  }
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in oklch, var(--foreground) 22%, transparent) transparent;
+  }
+}
+
+@layer components {
+  /* Label voice: condensed caps, the type of a registered-post label. */
+  .type-label {
+    font-stretch: 76%;
+    font-weight: 650;
+    text-transform: uppercase;
+    letter-spacing: 0.035em;
+  }
+  .type-display {
+    font-stretch: 72%;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: -0.01em;
+    line-height: 0.88;
+  }
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+  /* Perforation between docket rows. */
+  .perforated-top {
+    background-image: radial-gradient(circle, color-mix(in oklch, var(--foreground) 28%, transparent) 1px, transparent 1.4px);
+    background-size: 7px 3px;
+    background-repeat: repeat-x;
+    background-position: left top;
+  }
+  .perforated {
+    background-image: radial-gradient(circle, color-mix(in oklch, var(--foreground) 28%, transparent) 1px, transparent 1.4px);
+    background-size: 7px 3px;
+    background-repeat: repeat-x;
+    background-position: left bottom;
+  }
+}
+
+/* The one authored moment: a new lead is stamped onto the board. */
+@keyframes stamp-in {
+  0% {
+    opacity: 0;
+    transform: scale(1.35) rotate(-9deg);
+  }
+  60% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(-4deg);
+  }
+}
+@keyframes card-arrive {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes pulse-dot {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .motion-stamp {
+    animation: stamp-in 420ms var(--ease-out-expo) both;
+  }
+  .motion-arrive {
+    animation: card-arrive 380ms var(--ease-out-expo) both;
+  }
+  .motion-pulse {
+    animation: pulse-dot 1.6s ease-in-out infinite;
+  }
+}
+.stamp-rest {
+  transform: rotate(-4deg);
+}
+
+/* Landing: the docket fills in once, stamp by stamp. Visible by default; motion only staggers it. */
+@keyframes reveal-row {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+@keyframes stamp-land {
+  0% {
+    opacity: 0;
+    transform: scale(1.5) rotate(-12deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(-5deg);
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .landing-reveal {
+    animation: reveal-row 520ms var(--ease-out-expo) both;
+  }
+  .landing-stamp {
+    animation: stamp-land 460ms var(--ease-out-expo) both;
+  }
+}
