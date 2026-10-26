@@ -1,0 +1,21 @@
+{
+  "name": "leadline",
+  "private": true,
+  "packageManager": "bun@1.4.2",
+  "workspaces": ["apps/*", "packages/*"],
+  "scripts": {
+    "dev": "bun run --filter '@leadline/api' --filter '@leadline/web' dev",
+    "dev:api": "bun run --filter '@leadline/api' dev",
+    "dev:web": "bun run --filter '@leadline/web' dev",
+    "db:up": "docker compose up -d --wait",
+    "db:migrate": "bun run --filter '@leadline/api' db:migrate",
+    "db:seed": "bun run --filter '@leadline/api' db:seed",
+    "db:studio": "bun run --filter '@leadline/api' db:studio",
+    "demo:reset": "bun run --filter '@leadline/api' demo:reset",
+    "simulate": "bun run --cwd apps/api simulate",
+    "test": "bun run --filter '@leadline/api' test",
+    "typecheck": "bun run --filter '*' typecheck",
+    "lint": "bun run --filter '@leadline/web' lint"
+  },
+  "trustedDependencies": ["sharp", "unrs-resolver", "prisma", "@prisma/engines", "esbuild"]
+}
