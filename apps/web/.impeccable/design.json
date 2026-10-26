@@ -1,0 +1,727 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-26T09:57:45+00:00",
+  "title": "Design System: LeadLine",
+  "extensions": {
+    "colorMeta": {
+      "paper": {
+        "role": "neutral",
+        "displayName": "Cool Paper",
+        "canonical": "oklch(0.982 0.004 255)",
+        "cssVar": "--background",
+        "dark": "oklch(0.175 0.022 262)",
+        "tonalRamp": [
+          "oklch(0.15 0.006 255)",
+          "oklch(0.27 0.006 255)",
+          "oklch(0.39 0.006 255)",
+          "oklch(0.51 0.006 255)",
+          "oklch(0.63 0.006 255)",
+          "oklch(0.75 0.006 255)",
+          "oklch(0.86 0.006 255)",
+          "oklch(0.95 0.006 255)"
+        ]
+      },
+      "paper-surface": {
+        "role": "neutral",
+        "displayName": "Paper Surface",
+        "canonical": "oklch(0.955 0.009 258)",
+        "cssVar": "--surface",
+        "dark": "oklch(0.205 0.026 262)",
+        "tonalRamp": [
+          "oklch(0.15 0.01 258)",
+          "oklch(0.27 0.01 258)",
+          "oklch(0.39 0.01 258)",
+          "oklch(0.51 0.01 258)",
+          "oklch(0.63 0.01 258)",
+          "oklch(0.75 0.01 258)",
+          "oklch(0.86 0.01 258)",
+          "oklch(0.95 0.01 258)"
+        ]
+      },
+      "card-white": {
+        "role": "neutral",
+        "displayName": "Card White",
+        "canonical": "oklch(1 0 0)",
+        "cssVar": "--card",
+        "dark": "oklch(0.235 0.028 262)",
+        "tonalRamp": [
+          "oklch(0.15 0.005 258)",
+          "oklch(0.27 0.005 258)",
+          "oklch(0.39 0.005 258)",
+          "oklch(0.51 0.005 258)",
+          "oklch(0.63 0.005 258)",
+          "oklch(0.75 0.005 258)",
+          "oklch(0.86 0.005 258)",
+          "oklch(0.95 0.005 258)"
+        ]
+      },
+      "postmark-ink": {
+        "role": "neutral",
+        "displayName": "Postmark Ink",
+        "canonical": "oklch(0.23 0.035 262)",
+        "cssVar": "--foreground",
+        "dark": "oklch(0.94 0.01 255)",
+        "tonalRamp": [
+          "oklch(0.15 0.035 262)",
+          "oklch(0.27 0.035 262)",
+          "oklch(0.39 0.035 262)",
+          "oklch(0.51 0.035 262)",
+          "oklch(0.63 0.035 262)",
+          "oklch(0.75 0.035 262)",
+          "oklch(0.86 0.035 262)",
+          "oklch(0.95 0.035 262)"
+        ]
+      },
+      "ink-muted": {
+        "role": "neutral",
+        "displayName": "Ink Muted",
+        "canonical": "oklch(0.46 0.03 260)",
+        "cssVar": "--muted-foreground",
+        "dark": "oklch(0.74 0.025 258)",
+        "tonalRamp": [
+          "oklch(0.15 0.03 260)",
+          "oklch(0.27 0.03 260)",
+          "oklch(0.39 0.03 260)",
+          "oklch(0.51 0.03 260)",
+          "oklch(0.63 0.03 260)",
+          "oklch(0.75 0.03 260)",
+          "oklch(0.86 0.03 260)",
+          "oklch(0.95 0.03 260)"
+        ]
+      },
+      "hairline": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "oklch(0.885 0.013 258)",
+        "cssVar": "--border",
+        "dark": "oklch(1 0 0 / 11%)",
+        "tonalRamp": [
+          "oklch(0.15 0.013 258)",
+          "oklch(0.27 0.013 258)",
+          "oklch(0.39 0.013 258)",
+          "oklch(0.51 0.013 258)",
+          "oklch(0.63 0.013 258)",
+          "oklch(0.75 0.013 258)",
+          "oklch(0.86 0.013 258)",
+          "oklch(0.95 0.013 258)"
+        ]
+      },
+      "input-stroke": {
+        "role": "neutral",
+        "displayName": "Input Stroke",
+        "canonical": "oklch(0.86 0.015 258)",
+        "cssVar": "--input",
+        "dark": "oklch(1 0 0 / 16%)",
+        "tonalRamp": [
+          "oklch(0.15 0.015 258)",
+          "oklch(0.27 0.015 258)",
+          "oklch(0.39 0.015 258)",
+          "oklch(0.51 0.015 258)",
+          "oklch(0.63 0.015 258)",
+          "oklch(0.75 0.015 258)",
+          "oklch(0.86 0.015 258)",
+          "oklch(0.95 0.015 258)"
+        ]
+      },
+      "registered-blue": {
+        "role": "primary",
+        "displayName": "Registered Blue",
+        "canonical": "oklch(0.44 0.17 263)",
+        "cssVar": "--brand",
+        "dark": "oklch(0.72 0.12 262)",
+        "tonalRamp": [
+          "oklch(0.15 0.15 263)",
+          "oklch(0.27 0.15 263)",
+          "oklch(0.39 0.15 263)",
+          "oklch(0.51 0.15 263)",
+          "oklch(0.63 0.15 263)",
+          "oklch(0.75 0.15 263)",
+          "oklch(0.86 0.15 263)",
+          "oklch(0.95 0.15 263)"
+        ]
+      },
+      "registered-blue-soft": {
+        "role": "primary",
+        "displayName": "Registered Blue Soft",
+        "canonical": "oklch(0.94 0.035 263)",
+        "cssVar": "--brand-soft",
+        "dark": "oklch(0.3 0.07 263)",
+        "tonalRamp": [
+          "oklch(0.15 0.05 263)",
+          "oklch(0.27 0.05 263)",
+          "oklch(0.39 0.05 263)",
+          "oklch(0.51 0.05 263)",
+          "oklch(0.63 0.05 263)",
+          "oklch(0.75 0.05 263)",
+          "oklch(0.86 0.05 263)",
+          "oklch(0.95 0.05 263)"
+        ]
+      },
+      "rail-blue": {
+        "role": "primary",
+        "displayName": "Rail Blue",
+        "canonical": "oklch(0.33 0.13 264)",
+        "cssVar": "--rail",
+        "dark": "oklch(0.25 0.07 264)",
+        "tonalRamp": [
+          "oklch(0.15 0.12 264)",
+          "oklch(0.27 0.12 264)",
+          "oklch(0.39 0.12 264)",
+          "oklch(0.51 0.12 264)",
+          "oklch(0.63 0.12 264)",
+          "oklch(0.75 0.12 264)",
+          "oklch(0.86 0.12 264)",
+          "oklch(0.95 0.12 264)"
+        ]
+      },
+      "rail-foreground": {
+        "role": "primary",
+        "displayName": "Rail Foreground",
+        "canonical": "oklch(0.97 0.01 255)",
+        "cssVar": "--rail-foreground",
+        "dark": "oklch(0.96 0.01 255)",
+        "tonalRamp": [
+          "oklch(0.15 0.01 255)",
+          "oklch(0.27 0.01 255)",
+          "oklch(0.39 0.01 255)",
+          "oklch(0.51 0.01 255)",
+          "oklch(0.63 0.01 255)",
+          "oklch(0.75 0.01 255)",
+          "oklch(0.86 0.01 255)",
+          "oklch(0.95 0.01 255)"
+        ]
+      },
+      "rail-muted": {
+        "role": "primary",
+        "displayName": "Rail Muted",
+        "canonical": "oklch(0.82 0.05 262)",
+        "cssVar": "--rail-muted",
+        "dark": "oklch(0.78 0.04 262)",
+        "tonalRamp": [
+          "oklch(0.15 0.05 262)",
+          "oklch(0.27 0.05 262)",
+          "oklch(0.39 0.05 262)",
+          "oklch(0.51 0.05 262)",
+          "oklch(0.63 0.05 262)",
+          "oklch(0.75 0.05 262)",
+          "oklch(0.86 0.05 262)",
+          "oklch(0.95 0.05 262)"
+        ]
+      },
+      "focus-blue": {
+        "role": "primary",
+        "displayName": "Focus Blue",
+        "canonical": "oklch(0.52 0.19 263)",
+        "cssVar": "--ring",
+        "dark": "oklch(0.72 0.13 262)",
+        "tonalRamp": [
+          "oklch(0.15 0.16 263)",
+          "oklch(0.27 0.16 263)",
+          "oklch(0.39 0.16 263)",
+          "oklch(0.51 0.16 263)",
+          "oklch(0.63 0.16 263)",
+          "oklch(0.75 0.16 263)",
+          "oklch(0.86 0.16 263)",
+          "oklch(0.95 0.16 263)"
+        ]
+      },
+      "ok-green": {
+        "role": "state",
+        "displayName": "On-time Green",
+        "canonical": "oklch(0.5 0.12 155)",
+        "cssVar": "--ok",
+        "dark": "oklch(0.78 0.13 155)",
+        "tonalRamp": [
+          "oklch(0.15 0.11 155)",
+          "oklch(0.27 0.11 155)",
+          "oklch(0.39 0.11 155)",
+          "oklch(0.51 0.11 155)",
+          "oklch(0.63 0.11 155)",
+          "oklch(0.75 0.11 155)",
+          "oklch(0.86 0.11 155)",
+          "oklch(0.95 0.11 155)"
+        ]
+      },
+      "ok-soft": {
+        "role": "state",
+        "displayName": "On-time Green Soft",
+        "canonical": "oklch(0.95 0.04 155)",
+        "cssVar": "--ok-soft",
+        "dark": "oklch(0.3 0.06 155)",
+        "tonalRamp": [
+          "oklch(0.15 0.05 155)",
+          "oklch(0.27 0.05 155)",
+          "oklch(0.39 0.05 155)",
+          "oklch(0.51 0.05 155)",
+          "oklch(0.63 0.05 155)",
+          "oklch(0.75 0.05 155)",
+          "oklch(0.86 0.05 155)",
+          "oklch(0.95 0.05 155)"
+        ]
+      },
+      "warn-amber": {
+        "role": "state",
+        "displayName": "Nearing Amber",
+        "canonical": "oklch(0.52 0.12 65)",
+        "cssVar": "--warn",
+        "dark": "oklch(0.82 0.13 80)",
+        "tonalRamp": [
+          "oklch(0.15 0.11 65)",
+          "oklch(0.27 0.11 65)",
+          "oklch(0.39 0.11 65)",
+          "oklch(0.51 0.11 65)",
+          "oklch(0.63 0.11 65)",
+          "oklch(0.75 0.11 65)",
+          "oklch(0.86 0.11 65)",
+          "oklch(0.95 0.11 65)"
+        ]
+      },
+      "warn-soft": {
+        "role": "state",
+        "displayName": "Nearing Amber Soft",
+        "canonical": "oklch(0.95 0.05 80)",
+        "cssVar": "--warn-soft",
+        "dark": "oklch(0.32 0.06 75)",
+        "tonalRamp": [
+          "oklch(0.15 0.05 80)",
+          "oklch(0.27 0.05 80)",
+          "oklch(0.39 0.05 80)",
+          "oklch(0.51 0.05 80)",
+          "oklch(0.63 0.05 80)",
+          "oklch(0.75 0.05 80)",
+          "oklch(0.86 0.05 80)",
+          "oklch(0.95 0.05 80)"
+        ]
+      },
+      "franking-red": {
+        "role": "state",
+        "displayName": "Franking Red",
+        "canonical": "oklch(0.53 0.2 27)",
+        "cssVar": "--overdue",
+        "dark": "oklch(0.72 0.16 25)",
+        "tonalRamp": [
+          "oklch(0.15 0.17 27)",
+          "oklch(0.27 0.17 27)",
+          "oklch(0.39 0.17 27)",
+          "oklch(0.51 0.17 27)",
+          "oklch(0.63 0.17 27)",
+          "oklch(0.75 0.17 27)",
+          "oklch(0.86 0.17 27)",
+          "oklch(0.95 0.17 27)"
+        ]
+      },
+      "franking-red-soft": {
+        "role": "state",
+        "displayName": "Franking Red Soft",
+        "canonical": "oklch(0.95 0.035 25)",
+        "cssVar": "--overdue-soft",
+        "dark": "oklch(0.32 0.08 25)",
+        "tonalRamp": [
+          "oklch(0.15 0.05 25)",
+          "oklch(0.27 0.05 25)",
+          "oklch(0.39 0.05 25)",
+          "oklch(0.51 0.05 25)",
+          "oklch(0.63 0.05 25)",
+          "oklch(0.75 0.05 25)",
+          "oklch(0.86 0.05 25)",
+          "oklch(0.95 0.05 25)"
+        ]
+      },
+      "hub-teal": {
+        "role": "secondary",
+        "displayName": "Hub Teal",
+        "canonical": "oklch(0.55 0.1 195)",
+        "cssVar": "--hub",
+        "dark": "oklch(0.78 0.1 195)",
+        "tonalRamp": [
+          "oklch(0.15 0.09 195)",
+          "oklch(0.27 0.09 195)",
+          "oklch(0.39 0.09 195)",
+          "oklch(0.51 0.09 195)",
+          "oklch(0.63 0.09 195)",
+          "oklch(0.75 0.09 195)",
+          "oklch(0.86 0.09 195)",
+          "oklch(0.95 0.09 195)"
+        ]
+      },
+      "hub-teal-soft": {
+        "role": "secondary",
+        "displayName": "Hub Teal Soft",
+        "canonical": "oklch(0.94 0.035 195)",
+        "cssVar": "--hub-soft",
+        "dark": "oklch(0.3 0.05 195)",
+        "tonalRamp": [
+          "oklch(0.15 0.04 195)",
+          "oklch(0.27 0.04 195)",
+          "oklch(0.39 0.04 195)",
+          "oklch(0.51 0.04 195)",
+          "oklch(0.63 0.04 195)",
+          "oklch(0.75 0.04 195)",
+          "oklch(0.86 0.04 195)",
+          "oklch(0.95 0.04 195)"
+        ]
+      },
+      "stage-new": {
+        "role": "tertiary",
+        "displayName": "Stage New Slate",
+        "canonical": "oklch(0.55 0.025 260)",
+        "cssVar": "--stage-new",
+        "dark": "oklch(0.7 0.025 260)",
+        "tonalRamp": [
+          "oklch(0.15 0.025 260)",
+          "oklch(0.27 0.025 260)",
+          "oklch(0.39 0.025 260)",
+          "oklch(0.51 0.025 260)",
+          "oklch(0.63 0.025 260)",
+          "oklch(0.75 0.025 260)",
+          "oklch(0.86 0.025 260)",
+          "oklch(0.95 0.025 260)"
+        ]
+      },
+      "stage-contacted": {
+        "role": "tertiary",
+        "displayName": "Stage Contacted Pale Ink",
+        "canonical": "oklch(0.72 0.09 263)",
+        "cssVar": "--stage-contacted",
+        "dark": "oklch(0.5 0.09 263)",
+        "tonalRamp": [
+          "oklch(0.15 0.09 263)",
+          "oklch(0.27 0.09 263)",
+          "oklch(0.39 0.09 263)",
+          "oklch(0.51 0.09 263)",
+          "oklch(0.63 0.09 263)",
+          "oklch(0.75 0.09 263)",
+          "oklch(0.86 0.09 263)",
+          "oklch(0.95 0.09 263)"
+        ]
+      },
+      "stage-consult": {
+        "role": "tertiary",
+        "displayName": "Stage Consult Mid Ink",
+        "canonical": "oklch(0.56 0.15 263)",
+        "cssVar": "--stage-consult",
+        "dark": "oklch(0.66 0.13 263)",
+        "tonalRamp": [
+          "oklch(0.15 0.14 263)",
+          "oklch(0.27 0.14 263)",
+          "oklch(0.39 0.14 263)",
+          "oklch(0.51 0.14 263)",
+          "oklch(0.63 0.14 263)",
+          "oklch(0.75 0.14 263)",
+          "oklch(0.86 0.14 263)",
+          "oklch(0.95 0.14 263)"
+        ]
+      },
+      "stage-accepted": {
+        "role": "tertiary",
+        "displayName": "Stage Accepted Full Ink",
+        "canonical": "oklch(0.36 0.16 264)",
+        "cssVar": "--stage-accepted",
+        "dark": "oklch(0.82 0.1 262)",
+        "tonalRamp": [
+          "oklch(0.15 0.15 264)",
+          "oklch(0.27 0.15 264)",
+          "oklch(0.39 0.15 264)",
+          "oklch(0.51 0.15 264)",
+          "oklch(0.63 0.15 264)",
+          "oklch(0.75 0.15 264)",
+          "oklch(0.86 0.15 264)",
+          "oklch(0.95 0.15 264)"
+        ]
+      },
+      "stage-lost": {
+        "role": "tertiary",
+        "displayName": "Stage Lost Faint Grey",
+        "canonical": "oklch(0.8 0.01 260)",
+        "cssVar": "--stage-lost",
+        "dark": "oklch(0.42 0.015 260)",
+        "tonalRamp": [
+          "oklch(0.15 0.01 260)",
+          "oklch(0.27 0.01 260)",
+          "oklch(0.39 0.01 260)",
+          "oklch(0.51 0.01 260)",
+          "oklch(0.63 0.01 260)",
+          "oklch(0.75 0.01 260)",
+          "oklch(0.86 0.01 260)",
+          "oklch(0.95 0.01 260)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Condensed uppercase statement on landing rail-blue fields only (hero, footer close)."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Landing section headings, normal width, sentence case."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Lead names, step and problem titles."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Reading text at normal width, ss01 on."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Condensed caps for labels, stamps, column headers, platform names, lane names, the wordmark."
+      },
+      "measure": {
+        "displayName": "Measure",
+        "purpose": "Azeret Mono, tabular: times, counts, ids, span names, phones only."
+      }
+    },
+    "shadows": [
+      {
+        "name": "card-rest",
+        "value": "0 1px 0 oklch(0.3 0.05 262 / 0.04)",
+        "purpose": "Baseline under resting board cards."
+      },
+      {
+        "name": "in-transit",
+        "value": "0 18px 40px -16px oklch(0.25 0.1 262 / 0.45)",
+        "purpose": "Card in the drag overlay."
+      },
+      {
+        "name": "popover",
+        "value": "0 10px 30px -12px oklch(0.25 0.08 262 / 0.35)",
+        "purpose": "Dropdown menus."
+      },
+      {
+        "name": "notice-panel",
+        "value": "0 1px 2px oklch(0 0 0 / 0.04), 0 8px 24px -12px oklch(0.3 0.1 262 / 0.18)",
+        "purpose": "Empty and fault panel."
+      },
+      {
+        "name": "postmark",
+        "value": "0 2px 6px -2px oklch(0.3 0.12 263 / 0.35)",
+        "purpose": "Arrival postmark struck over a card edge."
+      },
+      {
+        "name": "arrival-chip",
+        "value": "0 8px 20px -8px oklch(0.3 0.15 263 / 0.6)",
+        "purpose": "Floating New lead chip."
+      },
+      {
+        "name": "docket-disclosure",
+        "value": "0 1px 0 oklch(0.3 0.05 262 / 0.06), 0 12px 32px -20px oklch(0.3 0.12 263 / 0.35)",
+        "purpose": "Landing technical docket on paper."
+      },
+      {
+        "name": "docket-on-field",
+        "value": "0 2px 0 oklch(0.2 0.1 264 / 0.25), 0 30px 60px -25px oklch(0.12 0.08 264 / 0.7)",
+        "purpose": "White docket resting on the blue hero."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-out-expo",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Easing for every authored entrance."
+      },
+      {
+        "name": "stamp-in",
+        "value": "420ms ease-out-expo; scale 1.35 rotate -9deg to scale 1 rotate -4deg",
+        "purpose": "The arrival postmark on a new lead: the one authored motion."
+      },
+      {
+        "name": "card-arrive",
+        "value": "380ms ease-out-expo; translateY -10px to 0",
+        "purpose": "The fresh card dropping in beneath its postmark; also the arrival chip and a fresh delivery group."
+      },
+      {
+        "name": "pulse-dot",
+        "value": "1.6s ease-in-out infinite; opacity 1 to 0.35",
+        "purpose": "Overdue timer dot and the live status dot."
+      },
+      {
+        "name": "landing-stamp",
+        "value": "460ms ease-out-expo; scale 1.5 rotate -12deg to rotate -5deg",
+        "purpose": "The same 48px postmark landing once on the hero docket; rows reveal 520ms (reveal-row), staggered."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sm",
+        "value": "640px"
+      },
+      {
+        "name": "md",
+        "value": "768px"
+      },
+      {
+        "name": "lg",
+        "value": "1024px"
+      },
+      {
+        "name": "xl",
+        "value": "1280px"
+      }
+    ],
+    "perforation": {
+      "value": "radial-gradient(circle, color-mix(in oklch, var(--foreground) 28%, transparent) 1px, transparent 1.4px); 7px 3px, repeat-x, top or bottom edge",
+      "purpose": "Rule between docket rows, landing list rows and the docket disclosure body."
+    },
+    "timerBands": [
+      {
+        "tone": "ok",
+        "range": "< 3 min"
+      },
+      {
+        "tone": "warn",
+        "range": "3-5 min"
+      },
+      {
+        "tone": "overdue",
+        "range": "5-60 min"
+      },
+      {
+        "tone": "critical",
+        "range": ">= 60 min"
+      }
+    ],
+    "darkMode": "prefers-color-scheme only; no in-app toggle. Dark values recorded per color under colorMeta.<token>.dark."
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Registered-blue action on paper; the default for every primary action in the app.",
+      "html": "<button class=\"ds-btn-primary\">Move to Contacted</button>",
+      "css": ".ds-btn-primary{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 10px;border:1px solid transparent;border-radius:var(--radius,0.5rem);background:var(--primary,oklch(0.44 0.17 263));color:var(--primary-foreground,oklch(0.985 0.004 255));font:500 14px/1 var(--font-archivo,Archivo),sans-serif;cursor:pointer;transition:background-color .15s,transform .1s}.ds-btn-primary:hover{background:color-mix(in oklch,var(--primary,oklch(0.44 0.17 263)) 80%,transparent)}.ds-btn-primary:focus-visible{outline:2px solid var(--ring,oklch(0.52 0.19 263));outline-offset:2px}.ds-btn-primary:active{transform:translateY(1px)}"
+    },
+    {
+      "name": "Button on a Blue Field",
+      "kind": "button",
+      "refersTo": "button-on-rail",
+      "description": "Paper-white CTA on the rail-blue hero and footer, with the arrow nudging on hover.",
+      "html": "<div style=\"background:var(--rail,oklch(0.33 0.13 264));padding:24px\"><a href=\"#\" class=\"ds-btn-rail\">Open the live board <svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M5 12h14\"/><path d=\"m12 5 7 7-7 7\"/></svg></a></div>",
+      "css": ".ds-btn-rail{display:inline-flex;align-items:center;gap:8px;height:48px;padding:0 20px;border-radius:0.4rem;background:oklch(0.985 0.004 255);color:var(--rail,oklch(0.33 0.13 264));font:600 15px/1 var(--font-archivo,Archivo),sans-serif;text-decoration:none;box-shadow:0 1px 0 oklch(0.1 0.05 264/0.3);transition:background-color .15s}.ds-btn-rail svg{transition:transform .2s}.ds-btn-rail:hover{background:#fff}.ds-btn-rail:hover svg{transform:translateX(2px)}.ds-btn-rail:focus-visible{outline:2px solid oklch(0.985 0.004 255);outline-offset:2px}"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "input-field",
+      "description": "Hairline field with a blue focus ring and blue caret.",
+      "html": "<input class=\"ds-input\" placeholder=\"Search leads\" />",
+      "css": ".ds-input{height:32px;width:240px;padding:4px 10px;border:1px solid var(--input,oklch(0.86 0.015 258));border-radius:var(--radius,0.5rem);background:transparent;color:var(--foreground,oklch(0.23 0.035 262));font:400 14px var(--font-archivo,Archivo),sans-serif;caret-color:var(--brand,oklch(0.44 0.17 263));outline:none;transition:border-color .15s,box-shadow .15s}.ds-input::placeholder{color:var(--muted-foreground,oklch(0.46 0.03 260))}.ds-input:focus-visible{border-color:var(--ring,oklch(0.52 0.19 263));box-shadow:0 0 0 3px color-mix(in oklch,var(--ring,oklch(0.52 0.19 263)) 50%,transparent)}"
+    },
+    {
+      "name": "App Rail",
+      "kind": "nav",
+      "refersTo": "app-rail",
+      "description": "Sticky rail-blue header: wordmark, clinic, live status, and the tab row with a 2px active underline.",
+      "html": "<header class=\"ds-rail\"><div class=\"ds-rail-top\"><span class=\"ds-wordmark\"><svg viewBox=\"0 0 40 24\" width=\"34\" height=\"20\" fill=\"none\" aria-hidden=\"true\"><circle cx=\"11\" cy=\"12\" r=\"9\" stroke=\"currentColor\" stroke-width=\"2\"/><circle cx=\"11\" cy=\"12\" r=\"5.2\" stroke=\"currentColor\" stroke-width=\"1\" opacity=\"0.7\"/><path d=\"M22 8.5h17M22 12h17M22 15.5h17\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\"/></svg><span>LeadLine</span></span><span class=\"ds-rail-div\"></span><span class=\"ds-rail-clinic\">Smile Studio London</span><span class=\"ds-pill-live\"><i></i>Live</span></div><nav class=\"ds-tabs\"><a href=\"#\" aria-current=\"page\">Pipeline</a><a href=\"#\">Deliveries</a><a href=\"#\">Attribution <span class=\"ds-coming\">Coming</span></a></nav></header>",
+      "css": ".ds-rail{background:var(--rail,oklch(0.33 0.13 264));color:var(--rail-foreground,oklch(0.97 0.01 255));font-family:var(--font-archivo,Archivo),sans-serif}.ds-rail-top{display:flex;align-items:center;gap:8px;height:52px;padding:0 16px}.ds-wordmark{display:inline-flex;align-items:center;gap:8px;font-size:1.05rem;font-weight:650;font-stretch:76%;text-transform:uppercase;letter-spacing:.06em}.ds-rail-div{width:1px;height:20px;margin:0 4px;background:rgb(255 255 255/.2)}.ds-rail-clinic{font-weight:600;font-size:15px}.ds-pill-live{margin-left:auto;display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border-radius:9999px;background:rgb(255 255 255/.1);font-size:12px;font-weight:500}.ds-pill-live i{width:8px;height:8px;border-radius:9999px;background:oklch(0.8 0.16 155)}.ds-tabs{display:flex;gap:4px;height:40px;padding:0 6px;border-top:1px solid rgb(255 255 255/.1)}.ds-tabs a{display:inline-flex;align-items:center;gap:6px;padding:0 12px;border-bottom:2px solid transparent;color:var(--rail-muted,oklch(0.82 0.05 262));font-size:14px;text-decoration:none;transition:color .15s}.ds-tabs a:hover{color:var(--rail-foreground,oklch(0.97 0.01 255))}.ds-tabs a[aria-current=page]{border-color:var(--rail-foreground,oklch(0.97 0.01 255));color:var(--rail-foreground,oklch(0.97 0.01 255));font-weight:600}.ds-tabs a:focus-visible{outline:2px solid var(--ring,oklch(0.52 0.19 263));outline-offset:2px}.ds-coming{border:1px solid color-mix(in oklch,var(--rail-muted,oklch(0.82 0.05 262)) 50%,transparent);border-radius:3px;padding:0 4px;font-size:.68rem;line-height:16px;font-weight:650;font-stretch:76%;text-transform:uppercase;letter-spacing:.035em}"
+    },
+    {
+      "name": "Speed Timer",
+      "kind": "chip",
+      "refersTo": "timer-ok",
+      "description": "The clock on every waiting lead, in four bands: ok, warn, overdue (pulsing dot), critical (solid red).",
+      "html": "<div style=\"display:flex;gap:8px\"><span class=\"ds-timer ds-ok\"><i></i>1:42</span><span class=\"ds-timer ds-warn\"><i></i>3:58</span><span class=\"ds-timer ds-overdue\"><i></i>12:07</span><span class=\"ds-timer ds-critical\"><i></i>1h 56m</span></div>",
+      "css": ".ds-timer{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:24px;min-width:4.25rem;padding:0 8px;border-radius:9999px;font:500 12px/1 var(--font-azeret,'Azeret Mono'),monospace;font-variant-numeric:tabular-nums}.ds-timer i{width:6px;height:6px;border-radius:9999px;background:currentColor}.ds-ok{background:var(--ok-soft,oklch(0.95 0.04 155));color:var(--ok,oklch(0.5 0.12 155))}.ds-warn{background:var(--warn-soft,oklch(0.95 0.05 80));color:var(--warn,oklch(0.52 0.12 65))}.ds-overdue{background:var(--overdue-soft,oklch(0.95 0.035 25));color:var(--overdue,oklch(0.53 0.2 27))}.ds-overdue i{animation:ds-pulse 1.6s ease-in-out infinite}.ds-critical{background:var(--overdue,oklch(0.53 0.2 27));color:#fff}@keyframes ds-pulse{50%{opacity:.35}}@media (prefers-reduced-motion:reduce){.ds-overdue i{animation:none}}"
+    },
+    {
+      "name": "Outcome Stamp",
+      "kind": "chip",
+      "refersTo": "outcome-stamp-created",
+      "description": "Delivery outcome set like a counter stamp in registered-blue ink: Created solid, Duplicate outlined, Rejected half-strength ink struck through. Never the clock's colours.",
+      "html": "<div style=\"display:flex;gap:8px\"><span class=\"ds-stamp ds-created\">Created</span><span class=\"ds-stamp ds-dup\">Duplicate</span><span class=\"ds-stamp ds-rej\">Rejected</span></div>",
+      "css": ".ds-stamp{display:inline-flex;align-items:center;height:20px;padding:0 6px;border:1.5px solid;border-radius:3px;font:650 .68rem/1 var(--font-archivo,Archivo),sans-serif;font-stretch:76%;text-transform:uppercase;letter-spacing:.035em}.ds-created{background:var(--brand,oklch(0.44 0.17 263));border-color:var(--brand,oklch(0.44 0.17 263));color:var(--primary-foreground,oklch(0.985 0.004 255))}.ds-dup{color:var(--brand,oklch(0.44 0.17 263));border-color:color-mix(in oklch,var(--brand,oklch(0.44 0.17 263)) 70%,transparent)}.ds-rej{color:color-mix(in oklch,var(--foreground,oklch(0.23 0.035 262)) 70%,transparent);border-color:color-mix(in oklch,var(--foreground,oklch(0.23 0.035 262)) 50%,transparent);text-decoration:line-through;text-decoration-thickness:1px}"
+    },
+    {
+      "name": "Lead Card with Arrival Postmark",
+      "kind": "card",
+      "refersTo": "lead-card",
+      "description": "White card on a paper-surface column; a fresh arrival gets the blue ring and the 48px double-ring postmark struck over its bottom-right corner, resting at -4deg.",
+      "html": "<div class=\"ds-col\"><span class=\"ds-col-rule\"></span><div class=\"ds-col-head\"><span>New</span><b>3</b></div><div class=\"ds-card ds-fresh\" tabindex=\"0\"><span class=\"ds-postmark\"><span class=\"ds-pm-inner\"><span>New</span><b>20:41</b></span></span><div class=\"ds-card-top\"><span class=\"ds-name\">Amelia Hart</span><span class=\"ds-timer-sm\">0:04</span></div><div class=\"ds-card-meta\"><span class=\"ds-plat\">Meta</span>Invisalign<b>20:41</b></div></div></div>",
+      "css": ".ds-col{width:19rem;border-radius:0.7rem;overflow:visible;background:var(--surface,oklch(0.955 0.009 258));padding-bottom:24px;font-family:var(--font-archivo,Archivo),sans-serif;color:var(--foreground,oklch(0.23 0.035 262))}.ds-col-rule{display:block;height:3px;border-radius:0.7rem 0.7rem 0 0;background:var(--stage-new,oklch(0.55 0.025 260))}.ds-col-head{display:flex;justify-content:space-between;padding:10px 12px 8px;font-size:.8rem;font-weight:650;font-stretch:76%;text-transform:uppercase;letter-spacing:.035em}.ds-col-head b{font:400 12px var(--font-azeret,'Azeret Mono'),monospace;color:var(--muted-foreground,oklch(0.46 0.03 260))}.ds-card{position:relative;margin:4px 8px 0;padding:12px;border:1px solid var(--border,oklch(0.885 0.013 258));border-radius:var(--radius,0.5rem);background:var(--card,#fff);box-shadow:0 1px 0 oklch(0.3 0.05 262/.04);transition:border-color .2s}.ds-card:hover{border-color:color-mix(in oklch,var(--border,oklch(0.885 0.013 258)),var(--foreground,oklch(0.23 0.035 262)) 18%)}.ds-card:focus-visible{outline:2px solid var(--ring,oklch(0.52 0.19 263));outline-offset:2px}.ds-fresh{border-color:var(--brand,oklch(0.44 0.17 263));box-shadow:0 0 0 2px color-mix(in oklch,var(--brand,oklch(0.44 0.17 263)) 35%,transparent);animation:ds-arrive 380ms cubic-bezier(.16,1,.3,1) both}.ds-postmark{position:absolute;right:36px;bottom:-12px;z-index:1;display:grid;place-items:center;width:48px;height:48px;padding:3px;box-sizing:border-box;border:2px solid currentColor;border-radius:9999px;background:var(--card,#fff);color:var(--brand,oklch(0.44 0.17 263));box-shadow:0 2px 6px -2px oklch(0.3 0.12 263/.35);transform:rotate(-4deg);animation:ds-stamp 420ms cubic-bezier(.16,1,.3,1) both}.ds-pm-inner{display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;height:100%;box-sizing:border-box;border:1px solid currentColor;border-radius:9999px;line-height:1}.ds-pm-inner span{font-size:.62rem;font-weight:650;font-stretch:76%;text-transform:uppercase;letter-spacing:.12em}.ds-pm-inner b{margin-top:2px;font:400 .6rem var(--font-azeret,'Azeret Mono'),monospace;font-variant-numeric:tabular-nums}.ds-card-top{display:flex;justify-content:space-between;gap:8px}.ds-name{font-size:14px;font-weight:600}.ds-timer-sm{display:inline-flex;align-items:center;height:24px;padding:0 8px;border-radius:9999px;background:var(--ok-soft,oklch(0.95 0.04 155));color:var(--ok,oklch(0.5 0.12 155));font:500 12px var(--font-azeret,'Azeret Mono'),monospace}.ds-card-meta{display:flex;align-items:center;gap:6px;margin-top:6px;font-size:12px;color:var(--muted-foreground,oklch(0.46 0.03 260))}.ds-card-meta b{margin-left:auto;font:400 .7rem var(--font-azeret,'Azeret Mono'),monospace}.ds-plat{font-size:.7rem;font-weight:650;font-stretch:76%;text-transform:uppercase;letter-spacing:.035em;color:color-mix(in oklch,var(--foreground,oklch(0.23 0.035 262)) 70%,transparent)}@keyframes ds-stamp{0%{opacity:0;transform:scale(1.35) rotate(-9deg)}60%{opacity:1}100%{opacity:1;transform:scale(1) rotate(-4deg)}}@keyframes ds-arrive{from{opacity:0;transform:translateY(-10px)}}@media (prefers-reduced-motion:reduce){.ds-fresh,.ds-postmark{animation:none}}"
+    },
+    {
+      "name": "Delivery Docket Row",
+      "kind": "custom",
+      "refersTo": "outcome-stamp-created",
+      "description": "Proof-of-delivery group: retries as one tracked item, a blue-ink timeline dot and counter stamp per delivery, perforation under the group header.",
+      "html": "<div class=\"ds-docket\"><div class=\"ds-docket-head\"><span>Sam Edwards</span><em>3 deliveries → 1 lead</em></div><ol class=\"ds-tl\"><li><i class=\"ds-dot ds-dot-c\"></i><b>09:39:35</b><span class=\"ds-st ds-st-c\">Created</span></li><li><i class=\"ds-dot ds-dot-d\"></i><b>09:39:35</b><span class=\"ds-st ds-st-d\">Duplicate</span></li><li><i class=\"ds-dot ds-dot-r\"></i><b>09:39:36</b><span class=\"ds-st ds-st-r\">Rejected</span></li></ol></div>",
+      "css": ".ds-docket{width:300px;border:1px solid var(--border,oklch(0.885 0.013 258));border-radius:0.7rem;background:var(--card,#fff);font-family:var(--font-archivo,Archivo),sans-serif;color:var(--foreground,oklch(0.23 0.035 262))}.ds-docket-head{display:flex;justify-content:space-between;align-items:baseline;padding:12px 16px;font-weight:600;font-size:14px;background-image:radial-gradient(circle,color-mix(in oklch,var(--foreground,oklch(0.23 0.035 262)) 28%,transparent) 1px,transparent 1.4px);background-size:7px 3px;background-repeat:repeat-x;background-position:left bottom}.ds-docket-head em{font-style:normal;font-weight:400;font-size:12px}.ds-tl{position:relative;list-style:none;margin:0;padding:6px 16px 12px}.ds-tl:before{content:'';position:absolute;left:20px;top:18px;bottom:24px;width:1px;background:var(--border,oklch(0.885 0.013 258))}.ds-tl li{position:relative;display:flex;align-items:center;gap:12px;padding:6px 0}.ds-tl b{font:400 12px var(--font-azeret,'Azeret Mono'),monospace;font-variant-numeric:tabular-nums;color:var(--muted-foreground,oklch(0.46 0.03 260))}.ds-dot{position:relative;z-index:1;width:9px;height:9px;box-sizing:border-box;border:1.5px solid;border-radius:9999px;background:var(--card,#fff)}.ds-dot-c{border-color:var(--brand,oklch(0.44 0.17 263));background:var(--brand,oklch(0.44 0.17 263))}.ds-dot-d{border-color:var(--brand,oklch(0.44 0.17 263))}.ds-dot-r{border-color:color-mix(in oklch,var(--foreground,oklch(0.23 0.035 262)) 50%,transparent)}.ds-st{display:inline-flex;align-items:center;height:20px;padding:0 6px;border:1.5px solid;border-radius:3px;font-size:.68rem;font-weight:650;font-stretch:76%;text-transform:uppercase;letter-spacing:.035em}.ds-st-c{background:var(--brand,oklch(0.44 0.17 263));border-color:var(--brand,oklch(0.44 0.17 263));color:var(--primary-foreground,oklch(0.985 0.004 255))}.ds-st-d{color:var(--brand,oklch(0.44 0.17 263));border-color:color-mix(in oklch,var(--brand,oklch(0.44 0.17 263)) 70%,transparent)}.ds-st-r{color:color-mix(in oklch,var(--foreground,oklch(0.23 0.035 262)) 70%,transparent);border-color:color-mix(in oklch,var(--foreground,oklch(0.23 0.035 262)) 50%,transparent);text-decoration:line-through}"
+    },
+    {
+      "name": "Arrival Chip",
+      "kind": "chip",
+      "refersTo": "arrival-chip",
+      "description": "Floating chip at the foot of the New column after an arrival; jumps to the card.",
+      "html": "<button class=\"ds-arrival-chip\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M12 5v14\"/><path d=\"m19 12-7 7-7-7\"/></svg>New lead: Amelia Hart</button>",
+      "css": ".ds-arrival-chip{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border:0;border-radius:9999px;background:var(--brand,oklch(0.44 0.17 263));color:var(--primary-foreground,oklch(0.985 0.004 255));font:600 12px var(--font-archivo,Archivo),sans-serif;box-shadow:0 8px 20px -8px oklch(0.3 0.15 263/.6);cursor:pointer}.ds-arrival-chip:hover{background:color-mix(in oklch,var(--brand,oklch(0.44 0.17 263)) 88%,black)}.ds-arrival-chip:focus-visible{outline:2px solid var(--ring,oklch(0.52 0.19 263));outline-offset:2px}"
+    }
+  ],
+  "narrative": {
+    "northStar": "Registered Post",
+    "overview": "**Creative North Star: \"Registered Post\"**\n\nLeadLine treats every enquiry as a registered item: received, verified, stamped once, tracked end to end, with the clock on it always visible. The world is registered-envelope stock: cool paper ground, deep registered blue carrying whole fields (the landing hero and the app's header rail), postmark blue-black ink for type, and a franking red that appears only when something is overdue or has failed. Structure comes from the envelope itself: crossed paper bands with blue double rules on the landing hero and across the top of the footer, perforated rules between docket rows and landing list rows, boxed counter stamps in blue ink for delivery outcomes, and a postmark ring as the brand mark and the arrival stamp.\n\nThe app is dense and operational. A board of stage columns on a paper surface, white cards with a measured clock in the corner, a delivery log that reads as a proof-of-delivery docket (\"3 deliveries → 1 lead\"), and a trace page that reads as a tracking history in two lanes. One family, Archivo, speaks in two widths: condensed caps for anything that would be printed on a label or stamp, normal width for reading. Azeret Mono appears only where something is measured.\n\nThe state vocabulary is total: each colour and each mark means one thing, everywhere, so the legend is always true. Motion is spent once, on the arrival postmark. Dark mode follows the operating system (prefers-color-scheme); there is no in-app toggle.",
+    "keyCharacteristics": [
+      "Registered-blue fields (rail, hero, footer) on cool paper; white cards and dockets sit on them.",
+      "Archivo width axis: condensed caps for labels and stamps, normal width for reading.",
+      "Azeret Mono only for times, ids, counts and phone numbers, always tabular.",
+      "One colour, one meaning: green, amber and red belong to the clock (red also to failure); teal is the hub; registered blue is the request, every primary action, and, in rising ink weights, the stages and delivery outcomes.",
+      "One authored motion: the postmark stamp that lands on a new arrival."
+    ],
+    "rules": [
+      {
+        "name": "The Franking Red Rule",
+        "body": "Red means overdue or failure and nothing else. `destructive` is aliased to it, so a destructive action reads as a failure state, never as decoration or brand.",
+        "section": "colors"
+      },
+      {
+        "name": "The True Legend Rule",
+        "body": "Every colour carries one meaning across the whole product. Green, amber and red belong to the speed-to-lead clock (red also to failure); stages and delivery outcomes speak in registered-blue ink weights, so they never borrow the clock's colours. A new meaning needs a new colour token, not a reused one.",
+        "section": "colors"
+      },
+      {
+        "name": "The Blue Field Rule",
+        "body": "Registered blue fills whole fields (rail, hero, footer) or marks single actions; it is never a mid-strength tint spread across content areas.",
+        "section": "colors"
+      },
+      {
+        "name": "The Two Widths Rule",
+        "body": "Condensed caps are for what would be printed on a label or stamp; anything read as a sentence stays at normal width and sentence case.",
+        "section": "typography"
+      },
+      {
+        "name": "The Meter Rule",
+        "body": "Mono is reserved for measurement. Never set prose, buttons or names in Azeret Mono.",
+        "section": "typography"
+      },
+      {
+        "name": "The Fixed Digit Rule",
+        "body": "Every live number is tabular with a fixed minimum width (timers 4.25rem), so ticking and hydration placeholders (\"–:––\") never shift layout.",
+        "section": "typography"
+      },
+      {
+        "name": "The Lift Means Transit Rule",
+        "body": "A strong shadow means the object is moving or floating (drag, menu, the arrival chip, a postmark struck over an edge). Resting cards stay flat; hover changes the border.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** fill whole fields with rail blue (header rail, hero, footer) and place white paper objects on them.",
+      "**Do** use condensed caps (width 76%, 650, 0.035em) for anything that is a label, stamp or column name, and normal width for sentences.",
+      "**Do** set every time, count and id in Azeret Mono with tabular numerals and a fixed minimum width.",
+      "**Do** keep the timer bands exact: green under 3 minutes, amber 3-5, red from 5, solid red from 60.",
+      "**Do** pair every state colour with words or an icon (status pill, stamps, timers carry text).",
+      "**Do** gate every animation behind `prefers-reduced-motion: no-preference` and keep content visible without it.",
+      "**Do** separate docket rows with the perforation or a hairline, and group retries as one tracked item."
+    ],
+    "donts": [
+      "**Don't** use franking red for anything but overdue or failure: not brand, not emphasis, not decoration.",
+      "**Don't** give a state colour a second meaning; hub teal is only the hub lane, and green, amber and red never mark a stage or a delivery outcome.",
+      "**Don't** add a second authored motion; the arrival postmark is the one moment, everything else is a plain transition.",
+      "**Don't** use Azeret Mono for prose, names or buttons.",
+      "**Don't** set sentences or paragraphs in condensed caps.",
+      "**Don't** add an in-app theme toggle; dark mode follows the operating system.",
+      "**Don't** lift resting cards with shadows; hover changes the border."
+    ]
+  }
+}
