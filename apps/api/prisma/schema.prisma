@@ -1,0 +1,154 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Practice {
+  id         String            @id @default(cuid())
+  slug       String            @unique
+  name       String
+  // HMAC-SHA256 key: the sender signs the raw webhook body with it (x-leadline-signature).
+  webhookSecret String         @unique
+  campaigns  Campaign[]
+  leads      Lead[]
+  deliveries WebhookDelivery[]
+  traceSpans TraceSpan[]
+}
+
+model Campaign {
+  id          String   @id @default(cuid())
+  practiceId  String
+  practice    Practice @relation(fields: [practiceId], references: [id], onDelete: Cascade)
+  platform    Platform
+  utmCampaign String
+  name        String
+  spendPence  Int      @default(0)
+  leads       Lead[]
+
+  @@unique([practiceId, utmCampaign])
+}
+
+model Lead {
+  id                  String       @id @default(cuid())
+  practiceId          String
+  practice            Practice     @relation(fields: [practiceId], references: [id], onDelete: Cascade)
+  source              LeadSource
+  // The platform's own lead ID. With practiceId + source it is the idempotency key.
+  sourceLeadId        String
+  name                String
+  email               String?
+  phone               String?
+  message             String
+  utmSource           String?
+  utmCampaign         String?
+  campaignId          String?
+  campaign            Campaign?    @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  stage               Stage        @default(NEW)
+  receivedAt          DateTime     @default(now())
+  firstContactedAt    DateTime?
+  consultBookedAt     DateTime?
+  treatmentAcceptedAt DateTime?
+  treatmentValuePence Int?
+  triageStatus        TriageStatus @default(PENDING)
+  treatmentInterest   Treatment?
+  urgency             Urgency?
+  objections          Objection[]
+  triageOpener        String?
+
+  @@unique([practiceId, source, sourceLeadId])
+  @@index([practiceId, stage, receivedAt])
+  @@index([campaignId])
+}
+
+// One row per webhook request, including retries, so duplicates are visible.
+model WebhookDelivery {
+  id           String           @id @default(cuid())
+  practiceId   String
+  practice     Practice         @relation(fields: [practiceId], references: [id], onDelete: Cascade)
+  source       String
+  sourceLeadId String?
+  outcome      DeliveryOutcome
+  leadId       String?
+  // The webhook request's id (x-request-id). Links this row to its TraceSpans and log lines.
+  traceId      String?
+  receivedAt   DateTime         @default(now())
+
+  @@index([practiceId, receivedAt])
+  @@index([traceId])
+}
+
+// One timed step of a webhook's journey: API request, NOTIFY fan-out, SSE push, triage.
+// Written by whichever process did the step, so a trace spans processes.
+model TraceSpan {
+  id         String   @id @default(cuid())
+  practiceId String
+  practice   Practice @relation(fields: [practiceId], references: [id], onDelete: Cascade)
+  traceId    String
+  name       String
+  // Milliseconds since the webhook arrived; sub-ms precision within the request.
+  offsetMs   Float
+  durationMs Float?
+  detail     String?
+  createdAt  DateTime @default(now())
+
+  @@index([practiceId, traceId])
+}
+
+enum Platform {
+  META
+  GOOGLE
+  TIKTOK
+}
+
+enum LeadSource {
+  META_LEAD_ADS
+  GOOGLE_LEAD_FORM
+  WEBSITE
+}
+
+enum Stage {
+  NEW
+  CONTACTED
+  CONSULT_BOOKED
+  TREATMENT_ACCEPTED
+  LOST
+}
+
+enum TriageStatus {
+  PENDING
+  DONE
+  FAILED
+}
+
+enum Treatment {
+  IMPLANTS
+  INVISALIGN
+  VENEERS
+  WHITENING
+  COMPOSITE_BONDING
+  OTHER
+}
+
+enum Urgency {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum Objection {
+  PRICE
+  FEAR
+  TIME
+  TRUST
+  OTHER
+}
+
+enum DeliveryOutcome {
+  CREATED
+  DUPLICATE
+  REJECTED
+}
