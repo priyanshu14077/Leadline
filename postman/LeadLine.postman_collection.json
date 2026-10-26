@@ -1,0 +1,1227 @@
+{
+  "info": {
+    "_postman_id": "5d0c7a52-3c1e-4c55-9a0e-1e6c2b9d7a11",
+    "name": "LeadLine",
+    "description": "LeadLine API: webhook ingestion, tenancy, the board, lead moves, traces and the SSE stream. Every request has `pm.test` assertions, and values chain through collection variables (`leadId`, `traceId`, `leadBody`, `signature`).\n\n## Import\n1. Postman → Import → select both files in `postman/`: `LeadLine.postman_collection.json` and `LeadLine.local.postman_environment.json`.\n2. Pick the **LeadLine local** environment (top right).\n\n## Run\n1. Start the stack from the repo root: `bun run db:up`, then `bun run dev` (API on http://localhost:4000). The demo seed must be loaded (`bun run db:seed`) so `smile-studio-london` and `harley-dental-manchester` exist.\n2. Run the whole collection in order (Collection → Run). The folders depend on each other: **Webhooks** creates the lead and trace that **Board**, **Leads** and **Traces** use.\n\nFrom a terminal:\n\n```\nbunx newman run postman/LeadLine.postman_collection.json -e postman/LeadLine.local.postman_environment.json\n```\n\n## Notes\n- Webhook requests are signed in their pre-request scripts: the JSON is built once, stored as a string in a variable used as the raw body, and that exact string is HMAC-SHA256 signed with `webhookSecret` into `x-leadline-signature: sha256=<hex>`. Edit the body in the script, not in the Body tab, or the signature won't match.\n- Each run creates real leads (source id `postman-…`, name Olivia Bennett, a `07700 900xxx` phone, an `@example.com` email) in the dev database. `bun run demo:reset` clears them.\n- The Stream request is skipped in runs; see its description for `curl -N`.\n- Change `practice` and `webhookSecret` together (`harley-dental-manchester` uses `whsec_dev_harley_dental`).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health",
+      "description": "Liveness check. Run first: if this fails, nothing else will.",
+      "item": [
+        {
+          "name": "Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "health"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 ok', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json()).to.eql({ ok: true });",
+                  "});",
+                  "pm.test('every response carries an x-request-id (the trace id)', () => {",
+                  "  pm.expect(pm.response.headers.get('x-request-id')).to.be.a('string').and.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Webhooks",
+      "description": "POST /webhooks/leads. Every request is HMAC-signed in its pre-request script over the exact raw body, like Meta's X-Hub-Signature-256.",
+      "item": [
+        {
+          "name": "New lead (signed)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-leadline-practice",
+                "value": "{{practice}}"
+              },
+              {
+                "key": "x-leadline-signature",
+                "value": "{{signature}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/webhooks/leads",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "webhooks",
+                "leads"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{{leadBody}}"
+            },
+            "description": "Builds a lead with a random `sourceLeadId`, stores the exact JSON string in `leadBody` (sent as the raw body) and signs that string into `signature`. Saves `leadId` and `traceId` for later requests."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Sign the exact string that is sent: the API verifies an HMAC over the raw bytes.",
+                  "function signed(body) {",
+                  "  const secret = pm.variables.get('webhookSecret');",
+                  "  return 'sha256=' + CryptoJS.HmacSHA256(body, secret).toString(CryptoJS.enc.Hex);",
+                  "}",
+                  "",
+                  "function newLeadBody(sourceLeadId) {",
+                  "  const n = String(Math.floor(Math.random() * 1000)).padStart(3, '0');",
+                  "  return JSON.stringify({",
+                  "    source: 'META_LEAD_ADS',",
+                  "    sourceLeadId,",
+                  "    name: 'Olivia Bennett',",
+                  "    email: 'olivia.bennett@example.com',",
+                  "    phone: '07700 900' + n,",
+                  "    message: 'Is Invisalign available on finance? (sent from Postman)',",
+                  "    utm: { source: 'facebook', campaign: 'invisalign_autumn_leadform' }",
+                  "  });",
+                  "}",
+                  "",
+                  "const sourceLeadId = 'postman-' + Date.now() + '-' + Math.floor(Math.random() * 1e6);",
+                  "const body = newLeadBody(sourceLeadId);",
+                  "pm.collectionVariables.set('sourceLeadId', sourceLeadId);",
+                  "pm.collectionVariables.set('leadBody', body);",
+                  "pm.collectionVariables.set('signature', signed(body));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 and a new lead', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.duplicate).to.equal(false);",
+                  "  pm.expect(json.leadId).to.be.a('string').and.not.empty;",
+                  "  pm.collectionVariables.set('leadId', json.leadId);",
+                  "  pm.collectionVariables.set('traceId', json.traceId);",
+                  "});",
+                  "pm.test('traceId in the body matches the x-request-id header', () => {",
+                  "  pm.expect(pm.response.json().traceId).to.equal(pm.response.headers.get('x-request-id'));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Same lead again (platform retry)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-leadline-practice",
+                "value": "{{practice}}"
+              },
+              {
+                "key": "x-leadline-signature",
+                "value": "{{signature}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/webhooks/leads",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "webhooks",
+                "leads"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{{leadBody}}"
+            },
+            "description": "Resends the exact body and signature of the previous request. The idempotency key is (practice, source, sourceLeadId)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('a retry is still 200, so the platform stops retrying', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('duplicate: true and the same lead id (first write wins)', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.duplicate).to.equal(true);",
+                  "  pm.expect(json.leadId).to.equal(pm.collectionVariables.get('leadId'));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Bad signature → 401",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-leadline-practice",
+                "value": "{{practice}}"
+              },
+              {
+                "key": "x-leadline-signature",
+                "value": "sha256=0000000000000000000000000000000000000000000000000000000000000000"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/webhooks/leads",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "webhooks",
+                "leads"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{{leadBody}}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('401 invalid signature', () => {",
+                  "  pm.response.to.have.status(401);",
+                  "  pm.expect(pm.response.json()).to.eql({ error: 'invalid signature' });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Unknown practice → 401",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-leadline-practice",
+                "value": "no-such-clinic"
+              },
+              {
+                "key": "x-leadline-signature",
+                "value": "{{signature}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/webhooks/leads",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "webhooks",
+                "leads"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{{leadBody}}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('401, the same answer as a bad signature (slugs are not confirmed)', () => {",
+                  "  pm.response.to.have.status(401);",
+                  "  pm.expect(pm.response.json()).to.eql({ error: 'invalid signature' });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Invalid payload → 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-leadline-practice",
+                "value": "{{practice}}"
+              },
+              {
+                "key": "x-leadline-signature",
+                "value": "{{badSignature}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/webhooks/leads",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "webhooks",
+                "leads"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{{badBody}}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Sign the exact string that is sent: the API verifies an HMAC over the raw bytes.",
+                  "function signed(body) {",
+                  "  const secret = pm.variables.get('webhookSecret');",
+                  "  return 'sha256=' + CryptoJS.HmacSHA256(body, secret).toString(CryptoJS.enc.Hex);",
+                  "}",
+                  "",
+                  "// Signed correctly but missing message, with an empty name: logged as a REJECTED delivery.",
+                  "const body = JSON.stringify({ source: 'META_LEAD_ADS', sourceLeadId: 'postman-invalid-' + Date.now(), name: '' });",
+                  "pm.collectionVariables.set('badBody', body);",
+                  "pm.collectionVariables.set('badSignature', signed(body));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('400 invalid payload with zod issues', () => {",
+                  "  pm.response.to.have.status(400);",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.error).to.equal('invalid payload');",
+                  "  pm.expect(json.issues).to.be.an('array').that.is.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Non-JSON body → 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "text/plain"
+              },
+              {
+                "key": "x-leadline-practice",
+                "value": "{{practice}}"
+              },
+              {
+                "key": "x-leadline-signature",
+                "value": "{{badSignature}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/webhooks/leads",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "webhooks",
+                "leads"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{{badBody}}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Sign the exact string that is sent: the API verifies an HMAC over the raw bytes.",
+                  "function signed(body) {",
+                  "  const secret = pm.variables.get('webhookSecret');",
+                  "  return 'sha256=' + CryptoJS.HmacSHA256(body, secret).toString(CryptoJS.enc.Hex);",
+                  "}",
+                  "",
+                  "const body = 'name=Olivia+Bennett&message=Invisalign';",
+                  "pm.collectionVariables.set('badBody', body);",
+                  "pm.collectionVariables.set('badSignature', signed(body));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('400 body is not JSON', () => {",
+                  "  pm.response.to.have.status(400);",
+                  "  pm.expect(pm.response.json()).to.eql({ error: 'body is not JSON' });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Custom x-request-id is the trace id",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-leadline-practice",
+                "value": "{{practice}}"
+              },
+              {
+                "key": "x-leadline-signature",
+                "value": "{{customSignature}}"
+              },
+              {
+                "key": "x-request-id",
+                "value": "{{customRequestId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/webhooks/leads",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "webhooks",
+                "leads"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{{customBody}}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Sign the exact string that is sent: the API verifies an HMAC over the raw bytes.",
+                  "function signed(body) {",
+                  "  const secret = pm.variables.get('webhookSecret');",
+                  "  return 'sha256=' + CryptoJS.HmacSHA256(body, secret).toString(CryptoJS.enc.Hex);",
+                  "}",
+                  "",
+                  "function newLeadBody(sourceLeadId) {",
+                  "  const n = String(Math.floor(Math.random() * 1000)).padStart(3, '0');",
+                  "  return JSON.stringify({",
+                  "    source: 'META_LEAD_ADS',",
+                  "    sourceLeadId,",
+                  "    name: 'Olivia Bennett',",
+                  "    email: 'olivia.bennett@example.com',",
+                  "    phone: '07700 900' + n,",
+                  "    message: 'Is Invisalign available on finance? (sent from Postman)',",
+                  "    utm: { source: 'facebook', campaign: 'invisalign_autumn_leadform' }",
+                  "  });",
+                  "}",
+                  "",
+                  "// A well-formed id is 8-64 of [A-Za-z0-9_-]; anything else is replaced by a UUID.",
+                  "pm.collectionVariables.set('customRequestId', 'postman-' + Date.now());",
+                  "const body = newLeadBody('postman-custom-' + Date.now() + '-' + Math.floor(Math.random() * 1e6));",
+                  "pm.collectionVariables.set('customBody', body);",
+                  "pm.collectionVariables.set('customSignature', signed(body));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const expected = pm.collectionVariables.get('customRequestId');",
+                  "pm.test('200 new lead', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().duplicate).to.equal(false);",
+                  "});",
+                  "pm.test('x-request-id is echoed in the header', () => {",
+                  "  pm.expect(pm.response.headers.get('x-request-id')).to.equal(expected);",
+                  "});",
+                  "pm.test('and used as the traceId', () => {",
+                  "  pm.expect(pm.response.json().traceId).to.equal(expected);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Practices",
+      "description": "Tenancy comes from the URL slug, resolved once per request.",
+      "item": [
+        {
+          "name": "List practices",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/practices",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "practices"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 and both demo clinics, no secrets', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const list = pm.response.json();",
+                  "  const slugs = list.map((p) => p.slug);",
+                  "  pm.expect(slugs).to.include(pm.variables.get('practice'));",
+                  "  pm.expect(slugs).to.include(pm.variables.get('otherPractice'));",
+                  "  list.forEach((p) => pm.expect(p).to.not.have.property('webhookSecret'));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get practice",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/practices/{{practice}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "practices",
+                "{{practice}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 and the practice', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const p = pm.response.json();",
+                  "  pm.expect(p.slug).to.equal(pm.variables.get('practice'));",
+                  "  pm.expect(p).to.have.all.keys('id', 'slug', 'name');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Unknown practice → 404",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/practices/no-such-clinic",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "practices",
+                "no-such-clinic"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('404 practice not found', () => {",
+                  "  pm.response.to.have.status(404);",
+                  "  pm.expect(pm.response.json()).to.eql({ error: 'practice not found' });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Board",
+      "description": "What the board's first paint loads: open leads, recent closes, lost count and the delivery log.",
+      "item": [
+        {
+          "name": "Get board",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/practices/{{practice}}/board",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "practices",
+                "{{practice}}",
+                "board"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 with leads, lostCount and deliveries', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.leads).to.be.an('array');",
+                  "  pm.expect(b.lostCount).to.be.a('number');",
+                  "  pm.expect(b.deliveries).to.be.an('array');",
+                  "});",
+                  "pm.test('the lead from the webhook is on the board as NEW', () => {",
+                  "  const lead = pm.response.json().leads.find((l) => l.id === pm.collectionVariables.get('leadId'));",
+                  "  pm.expect(lead, 'lead on board').to.be.an('object');",
+                  "  pm.expect(lead.stage).to.equal('NEW');",
+                  "  pm.expect(lead.triageStatus).to.equal('PENDING');",
+                  "});",
+                  "pm.test('its two deliveries (created + duplicate) are in the log', () => {",
+                  "  const sourceLeadId = pm.collectionVariables.get('sourceLeadId');",
+                  "  const outcomes = pm.response.json().deliveries.filter((d) => d.sourceLeadId === sourceLeadId).map((d) => d.outcome).sort();",
+                  "  pm.expect(outcomes).to.eql(['CREATED', 'DUPLICATE']);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Leads",
+      "description": "Drag a card (stage) and type a treatment value, on the lead created in Webhooks.",
+      "item": [
+        {
+          "name": "Move stage → CONTACTED",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/practices/{{practice}}/leads/{{leadId}}/stage",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "practices",
+                "{{practice}}",
+                "leads",
+                "{{leadId}}",
+                "stage"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"stage\": \"CONTACTED\" }"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200, moved, first contact stamped', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const lead = pm.response.json();",
+                  "  pm.expect(lead.id).to.equal(pm.collectionVariables.get('leadId'));",
+                  "  pm.expect(lead.stage).to.equal('CONTACTED');",
+                  "  pm.expect(lead.firstContactedAt).to.be.a('string');",
+                  "  pm.collectionVariables.set('firstContactedAt', lead.firstContactedAt);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Move back → NEW keeps first contact",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/practices/{{practice}}/leads/{{leadId}}/stage",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "practices",
+                "{{practice}}",
+                "leads",
+                "{{leadId}}",
+                "stage"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"stage\": \"NEW\" }"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200, back to NEW, first-contact stamp unchanged', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const lead = pm.response.json();",
+                  "  pm.expect(lead.stage).to.equal('NEW');",
+                  "  pm.expect(lead.firstContactedAt).to.equal(pm.collectionVariables.get('firstContactedAt'));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Invalid stage → 400",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/practices/{{practice}}/leads/{{leadId}}/stage",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "practices",
+                "{{practice}}",
+                "leads",
+                "{{leadId}}",
+                "stage"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"stage\": \"WON\" }"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('400 invalid body', () => {",
+                  "  pm.response.to.have.status(400);",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.error).to.equal('invalid body');",
+                  "  pm.expect(json.issues[0].path).to.eql(['stage']);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Other practice's slug → 404",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/practices/{{otherPractice}}/leads/{{leadId}}/stage",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "practices",
+                "{{otherPractice}}",
+                "leads",
+                "{{leadId}}",
+                "stage"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"stage\": \"LOST\" }"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('404 lead not found: another clinic cannot see or move it', () => {",
+                  "  pm.response.to.have.status(404);",
+                  "  pm.expect(pm.response.json()).to.eql({ error: 'lead not found' });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Set treatment value",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/practices/{{practice}}/leads/{{leadId}}/value",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "practices",
+                "{{practice}}",
+                "leads",
+                "{{leadId}}",
+                "value"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"pounds\": 4250.5 }"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 and stored as integer pence', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().treatmentValuePence).to.equal(425050);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Clear treatment value",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/practices/{{practice}}/leads/{{leadId}}/value",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "practices",
+                "{{practice}}",
+                "leads",
+                "{{leadId}}",
+                "value"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"pounds\": null }"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 and cleared', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().treatmentValuePence).to.equal(null);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Invalid treatment value → 400",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/practices/{{practice}}/leads/{{leadId}}/value",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "practices",
+                "{{practice}}",
+                "leads",
+                "{{leadId}}",
+                "value"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"pounds\": -5 }"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('400 invalid body (negative)', () => {",
+                  "  pm.response.to.have.status(400);",
+                  "  pm.expect(pm.response.json().error).to.equal('invalid body');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Value on other practice's slug → 404",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/practices/{{otherPractice}}/leads/{{leadId}}/value",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "practices",
+                "{{otherPractice}}",
+                "leads",
+                "{{leadId}}",
+                "value"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"pounds\": 1 }"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('404 lead not found', () => {",
+                  "  pm.response.to.have.status(404);",
+                  "  pm.expect(pm.response.json()).to.eql({ error: 'lead not found' });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Traces",
+      "description": "The waterfall behind a delivery-log row. The webhook writes its spans after the 200 is sent, and the LISTEN hub adds its own spans later, so the first request retries briefly.",
+      "item": [
+        {
+          "name": "Trace of the first webhook",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/practices/{{practice}}/traces/{{traceId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "practices",
+                "{{practice}}",
+                "traces",
+                "{{traceId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Give the post-response span insert a moment on retries.",
+                  "if (pm.collectionVariables.get('traceAttempts')) setTimeout(() => {}, 300);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Spans are written after the response, so poll up to 10 times before asserting.",
+                  "const json = pm.response.code === 200 ? pm.response.json() : null;",
+                  "const ready = json && json.spans.some((s) => s.name === 'response sent');",
+                  "const attempts = Number(pm.collectionVariables.get('traceAttempts') || 0);",
+                  "if (!ready && attempts < 10) {",
+                  "  pm.collectionVariables.set('traceAttempts', attempts + 1);",
+                  "  postman.setNextRequest(pm.info.requestName);",
+                  "} else {",
+                  "  pm.collectionVariables.unset('traceAttempts');",
+                  "  pm.test('200 with the API spans of the request', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "    const names = json.spans.map((s) => s.name);",
+                  "    ['request received', 'signature verified', 'lead insert · ON CONFLICT DO NOTHING', 'NOTIFY lead_events (sent at commit)', 'response sent']",
+                  "      .forEach((n) => pm.expect(names).to.include(n));",
+                  "  });",
+                  "  pm.test('linked to the CREATED delivery', () => {",
+                  "    pm.expect(json.traceId).to.equal(pm.collectionVariables.get('traceId'));",
+                  "    pm.expect(json.delivery.outcome).to.equal('CREATED');",
+                  "    pm.expect(json.delivery.leadName).to.equal('Olivia Bennett');",
+                  "  });",
+                  "  pm.test('spans are in time order', () => {",
+                  "    const offsets = json.spans.map((s) => s.offsetMs);",
+                  "    pm.expect(offsets).to.eql([...offsets].sort((a, b) => a - b));",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Trace from the other practice → 404",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/practices/{{otherPractice}}/traces/{{traceId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "practices",
+                "{{otherPractice}}",
+                "traces",
+                "{{traceId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('404 trace not found: traces are tenant-scoped', () => {",
+                  "  pm.response.to.have.status(404);",
+                  "  pm.expect(pm.response.json()).to.eql({ error: 'trace not found' });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Stream",
+      "description": "SSE. Documentation only; skipped in collection runs.",
+      "item": [
+        {
+          "name": "Live stream (SSE, skipped in runs)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/practices/{{practice}}/stream",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "practices",
+                "{{practice}}",
+                "stream"
+              ]
+            },
+            "description": "Server-sent events for the live board: `event: ready` on connect, then `lead.created`, `lead.updated` and `delivery.logged` for this practice only, plus a `: ping` comment every 15 s.\n\n**Postman can't assert on this.** The response never ends, so a test script would never run and a collection run would hang. The pre-request script therefore skips it unless the variable `openStream` is `true`. To look at it in the Postman app, set `openStream` to `true` in the environment, press Send, and press Cancel when done.\n\nWatch it from a terminal instead:\n\n```\ncurl -N -H 'Origin: http://localhost:3000' http://localhost:4000/practices/smile-studio-london/stream\n```\n\nThen send a lead in another terminal (`bun run simulate --one`) or rerun the Webhooks folder: `event: lead.created` and `event: delivery.logged` arrive within milliseconds. The other practice's stream gets nothing."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.variables.get('openStream') !== 'true') pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('SSE stream opened', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.headers.get('content-type')).to.include('text/event-stream');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "leadId",
+      "value": ""
+    },
+    {
+      "key": "traceId",
+      "value": ""
+    },
+    {
+      "key": "sourceLeadId",
+      "value": ""
+    },
+    {
+      "key": "leadBody",
+      "value": ""
+    },
+    {
+      "key": "signature",
+      "value": ""
+    },
+    {
+      "key": "badBody",
+      "value": ""
+    },
+    {
+      "key": "badSignature",
+      "value": ""
+    },
+    {
+      "key": "customRequestId",
+      "value": ""
+    },
+    {
+      "key": "customBody",
+      "value": ""
+    },
+    {
+      "key": "customSignature",
+      "value": ""
+    },
+    {
+      "key": "firstContactedAt",
+      "value": ""
+    }
+  ]
+}
