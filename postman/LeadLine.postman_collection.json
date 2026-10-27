@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "5d0c7a52-3c1e-4c55-9a0e-1e6c2b9d7a11",
     "name": "LeadLine",
-    "description": "LeadLine API: webhook ingestion, tenancy, the board, lead moves, traces and the SSE stream. Every request has `pm.test` assertions, and values chain through collection variables (`leadId`, `traceId`, `leadBody`, `signature`).\n\n## Import\n1. Postman → Import → select both files in `postman/`: `LeadLine.postman_collection.json` and `LeadLine.local.postman_environment.json`.\n2. Pick the **LeadLine local** environment (top right).\n\n## Run\n1. Start the stack from the repo root: `bun run db:up`, then `bun run dev` (API on http://localhost:4000). The demo seed must be loaded (`bun run db:seed`) so `smile-studio-london` and `harley-dental-manchester` exist.\n2. Run the whole collection in order (Collection → Run). The folders depend on each other: **Webhooks** creates the lead and trace that **Board**, **Leads** and **Traces** use.\n\nFrom a terminal:\n\n```\nbunx newman run postman/LeadLine.postman_collection.json -e postman/LeadLine.local.postman_environment.json\n```\n\n## Notes\n- Webhook requests are signed in their pre-request scripts: the JSON is built once, stored as a string in a variable used as the raw body, and that exact string is HMAC-SHA256 signed with `webhookSecret` into `x-leadline-signature: sha256=<hex>`. Edit the body in the script, not in the Body tab, or the signature won't match.\n- Each run creates real leads (source id `postman-…`, name Olivia Bennett, a `07700 900xxx` phone, an `@example.com` email) in the dev database. `bun run demo:reset` clears them.\n- The Stream request is skipped in runs; see its description for `curl -N`.\n- Change `practice` and `webhookSecret` together (`harley-dental-manchester` uses `whsec_dev_harley_dental`).",
+    "description": "LeadLine API: webhook ingestion, tenancy, the board, lead moves, traces, attribution, the demo form's signing route and the SSE stream. Every request has `pm.test` assertions, and values chain through collection variables (`leadId`, `traceId`, `leadBody`, `signature`).\n\n## Import\n1. Postman → Import → select both files in `postman/`: `LeadLine.postman_collection.json` and `LeadLine.local.postman_environment.json`.\n2. Pick the **LeadLine local** environment (top right).\n\n## Run\n1. Start the stack from the repo root: `bun run db:up`, then `bun run dev` (API on http://localhost:4000). The demo seed must be loaded (`bun run db:seed`) so `smile-studio-london` and `harley-dental-manchester` exist.\n2. Run the whole collection in order (Collection → Run). The folders depend on each other: **Webhooks** creates the lead and trace that **Board**, **Leads** and **Traces** use.\n\nFrom a terminal:\n\n```\nbunx newman run postman/LeadLine.postman_collection.json -e postman/LeadLine.local.postman_environment.json\n```\n\n## Notes\n- Webhook requests are signed in their pre-request scripts: the JSON is built once, stored as a string in a variable used as the raw body, and that exact string is HMAC-SHA256 signed with `webhookSecret` into `x-leadline-signature: sha256=<hex>`. Edit the body in the script, not in the Body tab, or the signature won't match.\n- Each run creates real leads (source id `postman-…`, name Olivia Bennett, a `07700 900xxx` phone, an `@example.com` email) in the dev database. `bun run demo:reset` clears them.\n- The Stream request is skipped in runs; see its description for `curl -N`.\n- Change `practice` and `webhookSecret` together (`harley-dental-manchester` uses `whsec_dev_harley_dental`).",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -1121,6 +1121,229 @@
                   "pm.test('404 trace not found: traces are tenant-scoped', () => {",
                   "  pm.response.to.have.status(404);",
                   "  pm.expect(pm.response.json()).to.eql({ error: 'trace not found' });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Attribution",
+      "description": "Cost per booked consult and value per £1, by campaign. Computed live from first-reached stage timestamps; ratios are null when the divisor is zero.",
+      "item": [
+        {
+          "name": "Attribution by campaign",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/practices/{{practice}}/attribution",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "practices",
+                "{{practice}}",
+                "attribution"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const NUMS = ['spendPence', 'leads', 'contacted', 'consultsBooked', 'treatmentsAccepted', 'revenuePence', 'acceptedWithoutValue'];",
+                  "const RATIOS = ['costPerLeadPence', 'costPerConsultPence', 'valuePerPound'];",
+                  "const body = pm.response.json();",
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('campaigns is an array of rows with numeric counts and money', () => {",
+                  "  pm.expect(body.campaigns).to.be.an('array').that.is.not.empty;",
+                  "  body.campaigns.forEach((c) => {",
+                  "    pm.expect(c).to.include.keys('campaignId', 'name', 'platform', 'utmCampaign');",
+                  "    NUMS.forEach((k) => pm.expect(c[k], `${c.utmCampaign}.${k}`).to.be.a('number'));",
+                  "  });",
+                  "});",
+                  "pm.test('totals.spendPence is the sum of campaign spend', () => {",
+                  "  const sum = body.campaigns.reduce((n, c) => n + c.spendPence, 0);",
+                  "  pm.expect(body.totals.spendPence).to.equal(sum);",
+                  "  pm.expect(body.unattributedLeads).to.be.a('number');",
+                  "});",
+                  "pm.test('ratio fields are null or numbers', () => {",
+                  "  [...body.campaigns, body.totals].forEach((c) => RATIOS.forEach((k) => {",
+                  "    pm.expect(c[k] === null || typeof c[k] === 'number', `${c.utmCampaign ?? 'totals'}.${k} = ${c[k]}`).to.be.true;",
+                  "  }));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Unknown practice → 404",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/practices/no-such-clinic/attribution",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "practices",
+                "no-such-clinic",
+                "attribution"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('404 practice not found', () => {",
+                  "  pm.response.to.have.status(404);",
+                  "  pm.expect(pm.response.json()).to.eql({ error: 'practice not found' });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Demo form",
+      "description": "`POST /demo/leads` plays the ad platform for the `/demo/form` page: the API signs the lead with the clinic's secret and sends it through `/webhooks/leads`. Off when `NODE_ENV=production`. Each created lead triggers one real Gemini triage call in the dev API.",
+      "item": [
+        {
+          "name": "One delivery",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/demo/leads",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "demo",
+                "leads"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"practice\": \"{{practice}}\",\n  \"name\": \"Olivia Bennett\",\n  \"email\": \"olivia.bennett@example.com\",\n  \"phone\": \"07700 900123\",\n  \"message\": \"Postman demo form: how much is Invisalign, and do you offer finance?\",\n  \"campaign\": \"postman_demo\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200, one non-duplicate delivery, a lead id', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const r = pm.response.json();",
+                  "  pm.expect(r.leadId).to.be.a('string').and.not.empty;",
+                  "  pm.expect(r.deliveries).to.have.lengthOf(1);",
+                  "  pm.expect(r.deliveries[0].duplicate).to.equal(false);",
+                  "  pm.expect(r.deliveries[0].traceId).to.be.a('string');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Three deliveries (platform retries) → 1 lead",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/demo/leads",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "demo",
+                "leads"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"practice\": \"{{practice}}\",\n  \"name\": \"Olivia Bennett\",\n  \"email\": \"olivia.bennett@example.com\",\n  \"message\": \"Postman demo form: I chipped a front tooth, can bonding fix it before a wedding next week?\",\n  \"deliveries\": 3\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200, exactly one non-duplicate, three distinct trace ids', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const r = pm.response.json();",
+                  "  pm.expect(r.leadId).to.be.a('string').and.not.empty;",
+                  "  pm.expect(r.deliveries).to.have.lengthOf(3);",
+                  "  pm.expect(r.deliveries.filter((d) => !d.duplicate)).to.have.lengthOf(1);",
+                  "  pm.expect(new Set(r.deliveries.map((d) => d.traceId)).size).to.equal(3);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Empty name → 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/demo/leads",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "demo",
+                "leads"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"practice\": \"{{practice}}\",\n  \"name\": \"\",\n  \"message\": \"No name given\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('400 invalid body with issues', () => {",
+                  "  pm.response.to.have.status(400);",
+                  "  const r = pm.response.json();",
+                  "  pm.expect(r.error).to.equal('invalid body');",
+                  "  pm.expect(r.issues.map((i) => i.path.join('.'))).to.include('name');",
                   "});"
                 ]
               }

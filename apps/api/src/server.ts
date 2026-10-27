@@ -1,8 +1,11 @@
 import { buildApp } from "./app";
 import { closeHub } from "./events";
 import { prisma } from "./db";
+import { geminiClassifier } from "./triage";
 
+const classify = geminiClassifier();
 const app = await buildApp({
+  classify,
   logger: {
     level: process.env.LOG_LEVEL ?? "info",
     // Pretty, single-line logs in dev; plain JSON (for log-based metrics) when NODE_ENV=production.
@@ -15,6 +18,7 @@ const app = await buildApp({
 
 const port = Number(process.env.API_PORT ?? 4000);
 await app.listen({ port, host: "0.0.0.0" });
+if (!classify) app.log.warn("GEMINI_API_KEY not set: new leads stay PENDING until `bun run triage:sweep`");
 
 for (const signal of ["SIGINT", "SIGTERM"] as const) {
   process.once(signal, async () => {

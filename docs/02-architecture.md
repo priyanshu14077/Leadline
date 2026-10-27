@@ -8,6 +8,7 @@ flowchart TB
     META["Meta Lead Ads (production, not wired)"]
     GOOG["Google lead form webhook (production, not wired)"]
     SIM["bun run simulate (apps/api/scripts/simulate.ts)"]
+    FORM["Try-it form /demo/form, in the browser"]
   end
 
   subgraph Browser
@@ -21,6 +22,7 @@ flowchart TB
 
   subgraph API["apps/api: Fastify on Node 24 via tsx, port 4000"]
     WH["POST /webhooks/leads"]
+    DEMO["POST /demo/leads (off in production)"]
     PR["/practices/:slug/* routes"]
     HUB["LISTEN hub (events.ts)"]
     TEN["forPractice tenant client"]
@@ -31,9 +33,11 @@ flowchart TB
     CH{{"NOTIFY channel lead_events"}}
   end
 
-  GEM["Gemini API (planned, not built)"]
+  GEM["Gemini API, free tier"]
 
   SIM -- "HMAC-signed JSON" --> WH
+  FORM -- "unsigned form JSON (CORS)" --> DEMO
+  DEMO -- "signs with the clinic secret, app.inject" --> WH
   META -. "would need an adapter, see 04-integrations" .-> WH
   GOOG -. "would need an adapter" .-> WH
   TAB -- "HTML + RSC" --- WEB
@@ -46,15 +50,15 @@ flowchart TB
   WH -- "SELECT pg_notify" --> CH
   CH -- "1 dedicated pg.Client per process" --> HUB
   HUB -- "SSE frames" --> PR
-  API -. "triage after the 200 (planned)" .-> GEM
+  WH -- "onResponse: triage after the 200" --> GEM
 
   classDef planned stroke-dasharray:5 5
-  class GEM,META,GOOG planned
+  class META,GOOG planned
 ```
 
 | Part | Runs | Owns | Never does |
 |---|---|---|---|
-| `apps/api` | `tsx watch` on `src/server.ts` (`apps/api/package.json` `dev` script), Fastify built in `apps/api/src/app.ts:10-43` | Postgres, webhooks, tenancy, the LISTEN hub, SSE, traces | Render HTML |
+| `apps/api` | `tsx watch` on `src/server.ts` (`apps/api/package.json` `dev` script), Fastify built in `apps/api/src/app.ts:19-55` | Postgres, webhooks, tenancy, the LISTEN hub, SSE, traces, triage, attribution, the demo signing route | Render HTML |
 | `apps/web` | `next dev`, Cache Components on (`apps/web/next.config.ts:5`) | Rendering only. Server components fetch the API (`apps/web/src/lib/api.ts:31-35`). The browser calls the API directly (`apps/web/src/lib/api.ts:38-45`) | Touch the DB, hold secrets. It only has `API_URL`, `NEXT_PUBLIC_API_URL`, `DEFAULT_PRACTICE` (`apps/web/.env`) |
 | `packages/shared` | Imported as TypeScript source by both | zod payloads and DTO types: `leadPayload`, `LeadCard`, `StreamMessage`, `Trace` (`packages/shared/src/index.ts:25-95`) | Contain logic |
 | Postgres | `docker-compose.yml`, port 5433 | Data, uniqueness, NOTIFY | – |
@@ -106,10 +110,11 @@ erDiagram
     datetime treatmentAcceptedAt "nullable"
     int treatmentValuePence "nullable"
     enum triageStatus "PENDING DONE FAILED"
-    enum treatmentInterest "planned triage output"
-    enum urgency "planned triage output"
-    enum_array objections "planned triage output"
-    string triageOpener "planned triage output"
+    int triageAttempts "failed model calls, default 0"
+    enum treatmentInterest "triage output, nullable"
+    enum urgency "triage output, nullable"
+    enum_array objections "triage output"
+    string triageOpener "triage output, nullable"
   }
   WebhookDelivery {
     string id PK
@@ -137,16 +142,18 @@ Constraints and indexes that carry the design (`apps/api/prisma/schema.prisma`):
 
 | Constraint | Line | Why |
 |---|---|---|
-| `Lead @@unique([practiceId, source, sourceLeadId])` | `:62` | The idempotency key. The database decides "already have it", not app code. |
-| `Lead @@index([practiceId, stage, receivedAt])` | `:63` | The board query filters by practice and stage and sorts by `receivedAt` (`apps/api/src/leads.ts:45-62`). |
+| `Lead @@unique([practiceId, source, sourceLeadId])` | `:64` | The idempotency key. The database decides "already have it", not app code. |
+| `Lead @@index([practiceId, stage, receivedAt])` | `:65` | The board query filters by practice and stage and sorts by `receivedAt` (`apps/api/src/leads.ts:45-62`). |
 | `Campaign @@unique([practiceId, utmCampaign])` | `:32` | Lets `ensureCampaign` race safely with `skipDuplicates` (`apps/api/src/ingest.ts:20-24`). |
 | `Practice.webhookSecret @unique` | `:15` | Rename of the old `webhookKey` (`apps/api/prisma/migrations/20261026120000_webhook_secret/migration.sql:2-3`). |
-| `WebhookDelivery @@index([traceId])`, `TraceSpan @@index([practiceId, traceId])` | `:81`, `:98` | Trace lookups. |
+| `WebhookDelivery @@index([traceId])`, `TraceSpan @@index([practiceId, traceId])` | `:83`, `:100` | Trace lookups. |
 | `onDelete: Cascade` from Practice; `SetNull` from Campaign to Lead | `:25`, `:38`, `:49` | Deleting a clinic deletes its data. Deleting a campaign keeps its leads. |
 
-Not enforced: `WebhookDelivery.leadId` has no foreign key (`apps/api/prisma/schema.prisma:75`), and `TraceSpan.traceId` is a loose string. Both are logs: they must accept a write even when the related row is odd or missing.
+Not enforced: `WebhookDelivery.leadId` has no foreign key (`apps/api/prisma/schema.prisma:77`), and `TraceSpan.traceId` is a loose string. Both are logs: they must accept a write even when the related row is odd or missing.
 
-Migrations: `20261026060938_init` (tables, enums, unique keys), `20261026120000_webhook_secret` (rename API key to HMAC secret), `20261026140000_trace_spans` (adds `WebhookDelivery.traceId` and the `TraceSpan` table).
+Migrations: `20261026060938_init` (tables, enums, unique keys), `20261026120000_webhook_secret` (rename API key to HMAC secret), `20261026140000_trace_spans` (adds `WebhookDelivery.traceId` and the `TraceSpan` table), `20261027090000_triage_attempts` (adds `Lead.triageAttempts INT NOT NULL DEFAULT 0`).
+
+The triage fields are written only by the model (`apps/api/src/triage.ts:98-107`). The seed leaves them null and `PENDING`; `bun run triage:sweep` fills them. `triageAttempts` counts real failures only: a rate limit or outage doesn't increment it (§2.4).
 
 ## 2.3 One webhook, POST to card-on-screen
 
@@ -203,13 +210,98 @@ sequenceDiagram
 
 Points to know when explaining it:
 
-- **The 200 does not wait for tracing.** Spans are collected in memory (`apps/api/src/trace.ts:9-29`) and written in `onResponse` after the reply is sent (`apps/api/src/routes/webhooks.ts:26-29`).
+- **The 200 does not wait for tracing.** Spans are collected in memory (`apps/api/src/trace.ts:9-29`) and written in `onResponse` after the reply is sent (`apps/api/src/routes/webhooks.ts:31-36`). The same hook starts triage (§2.4).
 - **NOTIFY happens before the 200.** `publish` is awaited inside `ingestLead` (`apps/api/src/ingest.ts:84-91`). The hub can receive the event before the response is on the wire. The real trace shows "NOTIFY received · lead.created" at 14 ms and "response sent" at 14 ms.
 - **Each process writes its own spans.** The hub places its spans on the request's timeline with `Date.now() - startedAt` (`apps/api/src/events.ts:58`). `startedAt` travels in the NOTIFY payload (`apps/api/src/ingest.ts:83`). Within the request, offsets come from `performance.now()` (`apps/api/src/trace.ts:13`). Across processes they come from wall-clock time, so cross-host clock skew would show up in the waterfall.
 - **One transaction (fixed 2026-10-26).** Lead insert, delivery insert and both `pg_notify` calls run in one `$transaction` (`apps/api/src/ingest.ts`). Postgres delivers a NOTIFY only at commit, so a board never hears about a lead that isn't there. A crash mid-way leaves nothing behind, so the platform's retry is a fresh `CREATED` whose event does go out. Proven by `tests/reliability.test.ts › a failure after the insert rolls back the lead, the delivery and the NOTIFY together`. Cost: each ingest holds a pool connection for the length of the transaction (a few ms). See ADR-03 in [03-decisions.md](03-decisions.md).
 - **A duplicate sends only `delivery.logged`** (`apps/api/src/ingest.ts:87-88`). The board gets a new "Duplicate" row and no card change.
 
-## 2.4 A drag: optimistic update, PATCH, NOTIFY, SSE confirm
+## 2.4 Triage after the 200
+
+Triage is one structured Gemini call per new lead. It runs in the webhook plugin's `onResponse` hook, after the reply is on the wire, so the platform never waits for the model and a model failure can't cost a lead (`apps/api/src/routes/webhooks.ts:31-36`). The triage spans join the webhook's own trace: `runTriage` builds `new RequestTrace(traceId, startedAt)`, which keeps the request's clock (`webhooks.ts:41-51`, `apps/api/src/trace.ts:17-23`).
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant P as Ad platform or demo form
+  participant F as Webhook plugin (webhooks.ts)
+  participant T as triageLead (triage.ts)
+  participant G as Gemini API
+  participant DB as Postgres
+  participant H as LISTEN hub
+  participant B as Browser board
+
+  P->>F: POST /webhooks/leads, signed
+  F->>DB: ingestLead in one transaction: lead insert, delivery row, NOTIFY lead.created
+  F-->>P: 200 with leadId, duplicate flag, traceId
+  Note over F: onResponse hook: span "response sent", saveSpans. Triage only if the outcome was CREATED and a model is configured
+  F->>T: runTriage with a continued RequestTrace, job tracked in inFlight
+  T->>DB: findUnique, tenant-scoped. Missing or already DONE means SKIPPED
+  T->>G: span "triage · Gemini call": generateContent, response schema, temperature 0, thinkingLevel LOW
+  alt schema-valid answer
+    G-->>T: treatmentInterest, urgency, objections, opener
+    T->>DB: updateMany where triageStatus is not DONE, set DONE and the four fields
+    alt 0 rows updated, another run finished first
+      T-->>F: SKIPPED, nothing pushed
+    else 1 row updated
+      T->>DB: pg_notify lead.updated with traceId and startedAt
+      T->>T: span "triage saved"
+      DB-->>H: notification
+      H-->>B: SSE lead.updated with the triaged LeadCard
+      B->>B: triage chip on the card, opener in the drawer
+    end
+  else 429, 408, 5xx or network error, so TriageBusy
+    T->>T: span "triage deferred". Lead stays PENDING, triageAttempts unchanged, nothing pushed
+  else 400 or an answer that fails the zod schema
+    T->>DB: updateMany to FAILED, triageAttempts + 1
+    T->>DB: pg_notify lead.updated
+    T->>T: span "triage failed"
+    DB-->>H: notification
+    H-->>B: SSE lead.updated, the drawer shows "Triage failed"
+  end
+  F->>DB: saveSpans for the triage spans under the same traceId
+  Note over T,DB: bun run triage:sweep later retries PENDING leads, and FAILED ones under 3 attempts
+```
+
+Points to know when explaining it:
+
+- **Outcomes.** `geminiClassifier` maps errors in `isRetryable` (`apps/api/src/triage.ts:46-49`): 408, 429, 5xx and anything that never reached the model become `TriageBusy`. A 400 or a reply that fails `triageResult` (`triage.ts:10-16`) is a real failure. `triageLead` returns `DONE`, `BUSY`, `FAILED` or `SKIPPED` and never throws (`triage.ts:85-125`).
+- **Race.** The write is `updateMany where triageStatus != DONE` (`triage.ts:98-108`), so if the webhook and the sweeper triage the same lead, the first answer wins and only one `lead.updated` goes out. A FAILED write has the same guard (`triage.ts:117-120`), so it can't overwrite a DONE.
+- **No model, no triage.** `apps/api/src/server.ts` passes `geminiClassifier()`, which is null without `GEMINI_API_KEY` (`triage.ts:52-53`). Leads then stay `PENDING` until `bun run triage:sweep`. Tests pass a fake through `buildApp({ classify })` (`apps/api/src/app.ts:12-17`).
+- **Shutdown.** In-flight jobs are awaited in `onClose` (`webhooks.ts:53-55`). A crash still loses them; the lead stays `PENDING` and the sweep picks it up.
+- **The sweeper** (`apps/api/scripts/triage-sweep.ts:34-54`) takes `PENDING` plus `FAILED` under `--max-attempts` (default 3), newest first, one at a time, `--every 4` seconds apart. On `BUSY` it waits 15 s, then doubles up to 120 s; a success resets the wait. It also backfills the seeded leads, which start `PENDING` on purpose.
+- **Latency.** Free-tier calls took about 15–20 s each on 2026-10-26. The headless E2E saw the triage chip about 19 s after the card appeared.
+
+## 2.5 Attribution
+
+`GET /practices/:slug/attribution` (`apps/api/src/routes/practices.ts:47`) returns the shared `Attribution` type: one row per campaign, `totals`, and `unattributedLeads` (leads with no campaign).
+
+```mermaid
+flowchart LR
+  WH["Webhook: new lead with utm_campaign"] --> L[("Lead: stage timestamps, treatmentValuePence")]
+  DR["Drag or value edit: PATCH stage, PUT value"] --> L
+  C[("Campaign: spendPence")] --> Q
+  L --> Q["attribution(practiceId): one raw SQL query, Campaign LEFT JOIN Lead, practiceId passed explicitly"]
+  Q --> API["GET /practices/:slug/attribution"]
+  API -- "first paint: server fetch under Suspense" --> PG["/app/[practice]/attribution"]
+  WH & DR -- "NOTIFY lead.*, then SSE" --> PG
+  PG -- "refetch, debounced 600 ms" --> API
+```
+
+| Field | Counted from | Code |
+|---|---|---|
+| `leads` | every lead on the campaign | `apps/api/src/attribution.ts:40` |
+| `contacted`, `consultsBooked`, `treatmentsAccepted` | `firstContactedAt`, `consultBookedAt`, `treatmentAcceptedAt` not null: the first time the stage was reached, so a lead booked and then lost still counts as booked | `attribution.ts:41-43` |
+| `revenuePence` | sum of `treatmentValuePence` on accepted leads | `attribution.ts:44` |
+| `acceptedWithoutValue` | accepted leads with no plan value yet, so revenue is understated | `attribution.ts:45` |
+| `costPerLeadPence`, `costPerConsultPence`, `valuePerPound` | spend ÷ leads, spend ÷ consults, revenue ÷ spend. `null` when the divisor is 0 | `attribution.ts:20-29` |
+
+- **Tenancy.** Raw SQL bypasses `forPractice`, so `practiceId` is a bound parameter in both queries and in the join (`attribution.ts:47-52`). `tests/attribution.test.ts › keeps each clinic's numbers apart` proves it with a same-named campaign in another clinic.
+- **A campaign with no leads still shows**, with its spend (`LEFT JOIN`). Rows are sorted by revenue, then spend (`attribution.ts:50`).
+- **Not cached.** The page is dynamic like the board (`apps/web/src/app/app/[practice]/attribution/page.tsx:10-20`). `AttributionView` refetches from the browser on any `lead.*` stream event, debounced 600 ms so a sweep or a burst of drags becomes one request (`apps/web/src/components/attribution/attribution-view.tsx:10`, `:134-146`). See ADR-21.
+- **On the seed**, Veneers – Instagram Reels returns about £9.69 per £1. The £199 TikTok whitening campaign has the cheapest cost per booked consult (£112.50) and returns £0.
+
+## 2.6 A drag: optimistic update, PATCH, NOTIFY, SSE confirm
 
 ```mermaid
 sequenceDiagram
@@ -247,7 +339,7 @@ The same card comes back twice, once in the PATCH response and once over SSE. `u
 
 Moving to **Lost** removes the card from the board and bumps the "lost" counter once per id (`board.tsx:54-56`, `:74-77`). The drop target only appears while dragging (`board.tsx:177-191`).
 
-## 2.5 Lead stages and timestamp rules
+## 2.7 Lead stages and timestamp rules
 
 `stageTimestamps` (`apps/api/src/leads.ts:73-84`) allows any move, including backwards. Each timestamp records the **first** time a stage was reached and is never cleared.
 
@@ -289,7 +381,7 @@ Board visibility (`apps/api/src/leads.ts:42-62`): every `NEW` and `CONTACTED` le
 
 The speed timer (`apps/web/src/components/board/speed-timer.tsx:12-59`): once `firstContactedAt` is set, it freezes at the time to first contact (green under 5 minutes). Otherwise it ticks: green under 3 min, amber under 5, red with a pulse after 5. A `LOST` lead with no contact shows "Not contacted". One shared 1-second ticker drives every timer (`apps/web/src/hooks/use-now.ts:5-28`). The server snapshot is `null`, so no time is baked into server HTML (`use-now.ts:26-27`).
 
-## 2.6 Tenancy
+## 2.8 Tenancy
 
 ```mermaid
 flowchart LR
@@ -312,20 +404,20 @@ How it works (`apps/api/src/tenant.ts`):
 - For creates (`:34-38`), it stamps `practiceId` onto `data`, including each row of `createMany`/`createManyAndReturn`.
 - For updates (`:43-45`), it forces `data.practiceId` to the current tenant, so a row can never be moved to another clinic.
 - The practice comes from the URL and is resolved once in a Fastify `preHandler` (`apps/api/src/routes/practices.ts:31-37`). Handlers never receive an unscoped client. In production it would come from the session (`practices.ts:23-27`).
-- The webhook resolves the practice from `x-leadline-practice` and HMAC instead (`apps/api/src/routes/webhooks.ts:36-46`), then `ingestLead` builds its own scoped client (`apps/api/src/ingest.ts:33`).
+- The webhook resolves the practice from `x-leadline-practice` and HMAC instead (`apps/api/src/routes/webhooks.ts:62-72`), then `ingestLead` builds its own scoped client (`apps/api/src/ingest.ts:33`).
 
 **What is NOT scoped:**
 
 | Path | Why it escapes | What the code does instead |
 |---|---|---|
-| Raw SQL (`$queryRaw`, `$executeRaw`) | Query extensions only see model operations | `publish` uses the base client for `pg_notify` (`apps/api/src/events.ts:24`); it carries no tenant data. Any future raw SQL must pass `practiceId` explicitly |
+| Raw SQL (`$queryRaw`, `$executeRaw`) | Query extensions only see model operations | `publish` uses the base client for `pg_notify` (`apps/api/src/events.ts:24`); it carries no tenant data. `attribution()` passes `practiceId` as a bound parameter in its `WHERE` and join (`apps/api/src/attribution.ts:47-52`). Any new raw SQL must do the same |
 | Nested reads from `Practice`, e.g. `practice.findUnique({ include: { leads: true } })` | The hook sees the operation on the parent model (`Practice`, not a tenant model). The nested relation query is not rewritten | No code does this. `leadCardSelect` includes `campaign` (`apps/api/src/leads.ts:14`), which is safe because the lead was already scoped and owns that campaign |
 | The base `prisma` client | It is a plain import | Used only for `findPractice`/`listPractices` (`apps/api/src/practice.ts:3-9`) and `saveSpans`, which sets `practiceId` explicitly (`apps/api/src/trace.ts:43-46`) |
 | Nested writes (`create: { campaign: { create: ... } }`) | The hook stamps only the top-level `data` | No code does nested writes |
 
 Tests: `apps/api/tests/tenancy.test.ts` (see [testing.md](testing.md)).
 
-## 2.7 Connection budget
+## 2.9 Connection budget
 
 ```mermaid
 flowchart LR
@@ -347,7 +439,7 @@ flowchart LR
 - Scaling formula: `instances × (5 + 1)` must stay under Postgres `max_connections` minus headroom. 10 instances = 60. Behind a transaction-mode pooler (PgBouncer, Supavisor), LISTEN needs a **session** connection, because LISTEN state lives on one backend.
 - The browser side has a limit too: HTTP/1.1 browsers allow about 6 connections per origin. Each tab's EventSource uses one. Many tabs of the same origin on HTTP/1.1 can starve other requests. HTTP/2 in production removes this.
 
-## 2.8 Reconnects and resync
+## 2.10 Reconnects and resync
 
 ```mermaid
 sequenceDiagram
@@ -369,9 +461,202 @@ sequenceDiagram
 
 Code: `ready` written on every connect (`apps/api/src/routes/practices.ts:62-63`), heartbeat (`:61`), client resync (`apps/web/src/hooks/use-lead-stream.ts:22-25`), adopting refreshed props (`apps/web/src/components/board/board.tsx:63-70`), hub reconnect (`apps/api/src/events.ts:80-89`).
 
-## 2.9 Error handling and logging
+## 2.11 Error handling and logging
 
-- Zod errors anywhere become `400 { error: "invalid body", issues }` (`apps/api/src/app.ts:26-27`). Other errors keep their status. 5xx messages are replaced with "internal error" (`app.ts:28-29`).
-- Every response carries `x-request-id` (`apps/api/src/app.ts:22-24`), and CORS exposes it (`app.ts:36`). The web client puts it on `ApiError` (`apps/web/src/lib/api.ts:23-26`).
-- Logs are pino: pretty in dev, JSON in production for log-based metrics (`apps/api/src/server.ts:5-14`). Every line carries `reqId`.
-- Graceful shutdown closes Fastify, the hub and Prisma on SIGINT/SIGTERM (`apps/api/src/server.ts:19-26`).
+- Zod errors anywhere become `400 { error: "invalid body", issues }` (`apps/api/src/app.ts:35-36`). Other errors keep their status. 5xx messages are replaced with "internal error" (`app.ts:37-40`).
+- Every response carries `x-request-id` (`apps/api/src/app.ts:31-33`), and CORS exposes it (`app.ts:47`). The web client puts it on `ApiError` (`apps/web/src/lib/api.ts:23-26`).
+- Logs are pino: pretty in dev, JSON in production for log-based metrics (`apps/api/src/server.ts:9-16`). Every line carries `reqId`.
+- Without `GEMINI_API_KEY` the server logs one warning at startup and leads stay `PENDING` (`apps/api/src/server.ts:21`).
+- Graceful shutdown closes Fastify, the hub and Prisma on SIGINT/SIGTERM (`apps/api/src/server.ts:23-30`). Fastify's `onClose` first waits for any triage still running (§2.4).
+
+## 2.12 UML views
+
+The sections above already hold most of the UML. This section adds the two structural views they don't cover: a class diagram and a deployment diagram.
+
+| UML diagram | Where |
+|---|---|
+| Sequence | §2.3 webhook, §2.4 triage, §2.6 drag, §2.10 reconnect |
+| State machine | §2.7 lead stages |
+| Entity-relationship (data model) | §2.2 |
+| Class | §2.12.1 below |
+| Deployment | §2.12.2 below |
+
+### 2.12.1 Class diagram: API modules and shared contracts
+
+Most of the API is plain functions, not classes. A module is drawn as a `«module»` class whose methods are its exports. Only `RequestTrace` and `TriageBusy` are real classes. Types come from `apps/api/src/*.ts` and `packages/shared/src/index.ts`.
+
+```mermaid
+classDiagram
+  direction LR
+
+  class Tracer {
+    <<interface>>
+    +traceId? string
+    +startedAt? number
+    +mark(name, detail?)
+    +time~T~(name, fn, detail?) Promise~T~
+  }
+  class RequestTrace {
+    +traceId string
+    +startedAt number
+    +practiceId string?
+    +spans TraceSpan[]
+    -t0 number
+    +RequestTrace(traceId, startedAt = now)
+    +mark(name, detail?)
+    +time~T~(name, fn, detail?) Promise~T~
+  }
+  class NO_TRACE {
+    <<object>>
+    +mark() no-op
+    +time(name, fn) runs fn
+  }
+  Tracer <|.. RequestTrace
+  Tracer <|.. NO_TRACE
+
+  class Classify {
+    <<function type>>
+    +call(Enquiry) Promise~TriageResult~
+  }
+  class TriageBusy {
+    <<exception>>
+    +reason 429 408 5xx network
+  }
+  Error <|-- TriageBusy
+
+  class triage {
+    <<module>>
+    +geminiClassifier(apiKey?, model?) Classify?
+    +triageLead(practiceId, leadId, classify, trace) TriageOutcome
+  }
+  class ingest {
+    <<module>>
+    +ingestLead(practiceId, LeadPayload, trace) IngestResult
+    +logRejected(practiceId, source, sourceLeadId?, trace)
+  }
+  class events {
+    <<module>>
+    +publish(LeadEvent, db = prisma)
+    +subscribe(practiceId, Listener, onResync?)
+    +streamCount(practiceId?) number
+    +closeHub()
+  }
+  class tenant {
+    <<module>>
+    +forPractice(practiceId) TenantDb
+  }
+  class leads {
+    <<module>>
+    +boardLeads(TenantDb)
+    +getLeadCard(TenantDb, id) LeadCard
+    +toLeadCard(row) LeadCard
+    +stageTimestamps(lead, stage)
+  }
+  class attribution {
+    <<module>>
+    +attribution(practiceId) Attribution
+  }
+  class app {
+    <<module>>
+    +buildApp(logger?, classify?, demo?) FastifyInstance
+  }
+
+  class LeadEvent {
+    <<union>>
+    +type created updated logged
+    +practiceId string
+    +traceId? string
+    +startedAt? number
+  }
+  class StreamMessage {
+    <<union>>
+    +type string
+    +lead LeadCard
+    +delivery DeliveryRow
+  }
+  class LeadCard {
+    <<shared DTO>>
+    +id string
+    +stage Stage
+    +receivedAt string
+    +firstContactedAt string?
+    +triageStatus TriageStatus
+    +urgency Urgency?
+    +objections Objection[]
+    +triageOpener string?
+    +campaign name platform
+  }
+  class Attribution {
+    <<shared DTO>>
+    +campaigns CampaignAttribution[]
+    +totals
+    +unattributedLeads number
+  }
+
+  app ..> ingest : webhook route
+  app ..> triage : onResponse
+  app ..> leads : practice routes
+  app ..> attribution : GET attribution
+  app ..> events : SSE subscribe
+  app ..> Classify : injected
+  triage ..> Classify : calls
+  triage ..> TriageBusy : catches
+  triage ..> Tracer : continued trace
+  triage ..> tenant
+  triage ..> events : lead.updated
+  ingest ..> Tracer
+  ingest ..> tenant
+  ingest ..> events : publish(tx)
+  leads ..> tenant
+  events ..> LeadEvent : NOTIFY payload
+  events ..> StreamMessage : resolves once, fans out
+  StreamMessage --> LeadCard
+  attribution ..> Attribution
+```
+
+What to read off it:
+
+- **`Tracer` is the seam for tracing.** `ingestLead` and `triageLead` take a `Tracer`, not a `RequestTrace`. The webhook passes a real trace; scripts and tests pass `NO_TRACE`. Triage after the 200 builds a second `RequestTrace` with the original `startedAt`, so its spans land on the same timeline (`apps/api/src/trace.ts:16-23`).
+- **`Classify` is the seam for the model.** `buildApp({ classify })` takes it, so tests inject a fake and `server.ts` injects `geminiClassifier()`. `triageLead` never imports Gemini directly.
+- **`LeadEvent` and `StreamMessage` are different shapes on purpose.** The NOTIFY payload carries ids only (8 KB limit). The hub turns it into a `StreamMessage` with a full `LeadCard`, once per process (§2.9).
+- **Every database path goes through `tenant`,** except `attribution` and `publish`, which use raw SQL and pass `practiceId` themselves (§2.8).
+
+### 2.12.2 Deployment diagram
+
+Mermaid has no UML deployment diagram type, so this uses a flowchart with UML `«device»`, `«executionEnvironment»` and `«artifact»` stereotypes.
+
+```mermaid
+flowchart TB
+  subgraph DEV["«device» Developer machine (macOS)"]
+    subgraph BUN["«executionEnvironment» Bun 1.4 workspace: bun run dev"]
+      subgraph NODE["«executionEnvironment» Node 24 via tsx watch"]
+        API["«artifact» apps/api src/server.ts\nFastify :4000"]
+      end
+      subgraph NEXT["«executionEnvironment» next dev"]
+        WEBA["«artifact» apps/web\nNext 16 :3000"]
+      end
+      SHARED["«artifact» packages/shared\nTypeScript source, no build"]
+      SCRIPTS["«artifact» scripts: simulate, triage:sweep, triage:eval"]
+    end
+    subgraph DOCKER["«executionEnvironment» Docker: docker-compose.yml"]
+      PG[("«artifact» postgres:16\nleadline-db :5433\nleadline + leadline_test")]
+    end
+    BROWSER["«executionEnvironment» Browser"]
+  end
+  GEMINI["«device» Google Gemini API\ngemini-3.5-flash-lite, free tier"]
+
+  SHARED -. "imported by" .-> API
+  SHARED -. "transpilePackages" .-> WEBA
+  BROWSER -- "HTTP :3000 pages" --> WEBA
+  BROWSER -- "HTTP :4000 SSE, PATCH, PUT, POST demo (CORS)" --> API
+  WEBA -- "HTTP :4000 server-to-server" --> API
+  API -- "TCP :5433 pool of 5 + 1 LISTEN" --> PG
+  SCRIPTS -- "HTTP :4000 signed webhooks" --> API
+  SCRIPTS -- "TCP :5433 (triage:sweep)" --> PG
+  API -- "HTTPS, root .env GEMINI_API_KEY" --> GEMINI
+  SCRIPTS -- "HTTPS (sweep, eval)" --> GEMINI
+```
+
+Where secrets live: the root `.env` (`DATABASE_URL`, `GEMINI_API_KEY`) is read only by the Node API, Prisma and the scripts. `apps/web/.env` has URLs and `DEFAULT_PRACTICE` only. Nothing reaches the browser except `NEXT_PUBLIC_API_URL`.
+
+In production the shape stays the same, but the parts run separately: the API as a long-running container (not serverless, because it holds the LISTEN connection and does work after the response), the web app wherever Next runs, Postgres managed, and Gemini on the paid tier or Vertex AI (ADR-15 in [03-decisions.md](03-decisions.md)).

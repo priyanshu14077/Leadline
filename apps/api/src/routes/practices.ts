@@ -1,5 +1,6 @@
-import { moveLeadBody, treatmentValueBody, type Board, type Practice, type Trace } from "@leadline/shared";
+import { moveLeadBody, treatmentValueBody, type Attribution, type Board, type Practice, type Trace } from "@leadline/shared";
 import type { FastifyPluginAsync } from "fastify";
+import { attribution } from "../attribution";
 import { recentDeliveries } from "../deliveries";
 import { publish, streamCount, subscribe } from "../events";
 import { boardLeads, getLeadCard, stageTimestamps } from "../leads";
@@ -42,6 +43,8 @@ const practiceScoped: FastifyPluginAsync = async (app) => {
     const [{ leads, lostCount }, deliveries] = await Promise.all([boardLeads(req.db), recentDeliveries(req.db)]);
     return { leads, lostCount, deliveries };
   });
+
+  app.get("/attribution", async (req): Promise<Attribution> => attribution(req.practice.id));
 
   app.get("/stream", async (req, reply) => {
     // Take over the raw response: Fastify would otherwise end it when the handler returns.

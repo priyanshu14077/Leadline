@@ -1,6 +1,6 @@
 ---
 name: leadline-run
-description: Start, reset, test, trace and verify LeadLine (Fastify API in apps/api, Next.js web in apps/web, Postgres in Docker). Use when running the app, seeding or resetting demo data, running tests, firing simulated leads, following a request end to end, or checking DB state before a recording.
+description: Start, reset, test, trace and verify LeadLine (Fastify API in apps/api, Next.js web in apps/web, Postgres in Docker). Use when running the app, seeding or resetting demo data, running tests, firing simulated leads or the demo form, triaging or evaluating with Gemini, following a request end to end, or checking DB state before a recording.
 ---
 
 # Run LeadLine
@@ -42,6 +42,15 @@ curl -si -X POST localhost:4000/webhooks/leads -H "content-type: application/jso
 
 Dev secrets: `smile-studio-london` → `whsec_dev_smile_studio`, `harley-dental-manchester` → `whsec_dev_harley_dental`.
 
+From the browser: http://localhost:3000/demo/form. "Fill with a sample", tick "Deliver it 3 times" for the retry beat, submit. The API (`POST /demo/leads`) signs it server-side and sends it through the real webhook.
+
+## Triage (Gemini)
+
+- New leads are triaged by the API after the webhook's 200, if `GEMINI_API_KEY` is set. Expect ~15-20 s on the free tier. The log line is `lead triaged {"outcome":"DONE"|"BUSY"|"FAILED"}`.
+- `bun run triage:sweep` triages everything still PENDING (all seeded leads) or FAILED under 3 attempts, one at a time with backoff. ~95 seeded leads take a while on the free tier; run it after `demo:reset` and before recording, so the board's cards have triage chips. `--practice <slug>`, `--limit N`.
+- `bun run triage:eval` scores the model on 20 hand-labelled enquiries (`apps/api/scripts/eval-set.ts`). It doesn't touch the DB.
+- 429/503 from Gemini means busy: the lead stays PENDING and the sweeper picks it up.
+
 ## Follow one request end to end
 
 1. Get the trace id: the `x-request-id` response header, the simulator output, or click a row in the board's "Webhook deliveries" panel.
@@ -51,11 +60,11 @@ Dev secrets: `smile-studio-london` → `whsec_dev_smile_studio`, `harley-dental-
 
 ## Reset before a recording take
 
-Run `bun run demo:reset` yourself. Prisma refuses `migrate reset` from an AI agent without explicit user consent. It drops the DB, re-migrates and re-seeds. Seed timestamps are relative to now, so reset right before recording.
+Run `bun run demo:reset` yourself. Prisma refuses `migrate reset` from an AI agent without explicit user consent. It drops the DB, re-migrates and re-seeds. Seed timestamps are relative to now, so reset right before recording, then `bun run triage:sweep` so seeded cards carry triage.
 
 ## Verify
 
-- `bun run test`: Vitest in `apps/api` against `leadline_test` (tenancy, idempotency, signatures, tracing).
+- `bun run test`: Vitest in `apps/api` against `leadline_test` (tenancy, idempotency, signatures, tracing, triage with a fake model, attribution, demo route). No test calls Gemini.
 - `bun run typecheck` and `bun run lint`.
 - `docker exec -it leadline-db psql -U leadline -d leadline`. Tables are quoted PascalCase (`"Lead"`, `"Campaign"`, `"WebhookDelivery"`, `"TraceSpan"`).
-- Expected seed shape: the TikTok whitening campaign has the most leads and close to zero bookings.
+- Expected seed shape: on `/app/smile-studio-london/attribution`, Veneers returns the most per £1 and the £199 TikTok whitening campaign returns £0 despite the cheapest cost per consult.

@@ -9,11 +9,18 @@ import { prisma } from "./db";
 export class RequestTrace {
   readonly spans: TraceSpan[] = [];
   /** Epoch ms at arrival. Travels in the NOTIFY payload so other processes can place their spans. */
-  readonly startedAt = Date.now();
-  private readonly t0 = performance.now();
+  readonly startedAt: number;
+  private readonly t0: number;
   practiceId: string | null = null;
 
-  constructor(readonly traceId: string) {}
+  /** Pass startedAt to continue an existing trace (work after the response), keeping its clock. */
+  constructor(
+    readonly traceId: string,
+    startedAt = Date.now(),
+  ) {
+    this.startedAt = startedAt;
+    this.t0 = performance.now() - (Date.now() - startedAt);
+  }
 
   mark(name: string, detail?: string) {
     this.spans.push({ name, offsetMs: performance.now() - this.t0, durationMs: null, detail: detail ?? null });

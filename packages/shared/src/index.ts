@@ -93,3 +93,45 @@ export type TraceSpan = {
 };
 
 export type Trace = { traceId: string; delivery: DeliveryRow | null; spans: TraceSpan[] };
+
+/** One campaign's funnel and money, all time. Counts are leads that ever reached each stage. */
+export type CampaignAttribution = {
+  campaignId: string;
+  name: string;
+  platform: Platform;
+  utmCampaign: string;
+  spendPence: number;
+  leads: number;
+  contacted: number;
+  consultsBooked: number;
+  treatmentsAccepted: number;
+  /** Sum of plan values on accepted leads. */
+  revenuePence: number;
+  /** Accepted leads with no plan value yet: revenue is understated by these. */
+  acceptedWithoutValue: number;
+  /** Null when the divisor is 0 (no leads, no consults, no spend). */
+  costPerLeadPence: number | null;
+  costPerConsultPence: number | null;
+  valuePerPound: number | null;
+};
+
+export type Attribution = {
+  campaigns: CampaignAttribution[];
+  totals: Omit<CampaignAttribution, "campaignId" | "name" | "platform" | "utmCampaign">;
+  /** Leads that arrived without a utm_campaign. */
+  unattributedLeads: number;
+};
+
+/** The "try it" ad form's body. The API signs it and sends it through the real webhook. */
+export const demoLeadBody = z.object({
+  practice: z.string().min(1).max(100),
+  name: z.string().trim().min(1).max(200),
+  email: z.email().optional(),
+  phone: z.string().trim().max(40).optional(),
+  message: z.string().trim().min(1).max(5000),
+  campaign: z.string().max(200).optional(),
+  /** 1 = a normal delivery; 3 = the platform retried twice. */
+  deliveries: z.number().int().min(1).max(3).default(1),
+});
+export type DemoLeadBody = z.input<typeof demoLeadBody>;
+export type DemoLeadResult = { leadId: string; deliveries: { duplicate: boolean; traceId: string }[] };

@@ -1,4 +1,4 @@
-import type { Board, LeadCard, Practice, Stage, Trace } from "@leadline/shared";
+import type { Attribution, Board, DemoLeadBody, DemoLeadResult, LeadCard, Practice, Stage, Trace } from "@leadline/shared";
 
 // Server components call the API over the internal URL; browsers use the public one (CORS-allowed).
 export const SERVER_API_URL = process.env.API_URL ?? "http://localhost:4000";
@@ -55,6 +55,7 @@ export const serverApi = {
   practices: () => request<Practice[]>(SERVER_API_URL, "/practices"),
   practice: (slug: string) => request<Practice>(SERVER_API_URL, `/practices/${encodeURIComponent(slug)}`),
   board: (slug: string) => request<Board>(SERVER_API_URL, `/practices/${encodeURIComponent(slug)}/board`),
+  attribution: (slug: string) => request<Attribution>(SERVER_API_URL, `/practices/${encodeURIComponent(slug)}/attribution`),
   trace: (slug: string, traceId: string) =>
     request<Trace>(SERVER_API_URL, `/practices/${encodeURIComponent(slug)}/traces/${encodeURIComponent(traceId)}`),
 };
@@ -63,6 +64,7 @@ export const serverApi = {
 export const browserApi = {
   streamUrl: (slug: string) => `${PUBLIC_API_URL}/practices/${encodeURIComponent(slug)}/stream`,
   board: (slug: string) => request<Board>(PUBLIC_API_URL, `/practices/${encodeURIComponent(slug)}/board`),
+  attribution: (slug: string) => request<Attribution>(PUBLIC_API_URL, `/practices/${encodeURIComponent(slug)}/attribution`),
   moveLead: (slug: string, id: string, stage: Stage) =>
     request<LeadCard>(PUBLIC_API_URL, `/practices/${encodeURIComponent(slug)}/leads/${id}/stage`, {
       method: "PATCH",
@@ -73,6 +75,7 @@ export const browserApi = {
       method: "PUT",
       body: JSON.stringify({ pounds }),
     }),
+  demoLead: (body: DemoLeadBody) => request<DemoLeadResult>(PUBLIC_API_URL, "/demo/leads", { method: "POST", body: JSON.stringify(body) }),
   trace: (slug: string, traceId: string) =>
     request<Trace>(PUBLIC_API_URL, `/practices/${encodeURIComponent(slug)}/traces/${encodeURIComponent(traceId)}`),
 };

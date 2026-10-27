@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Lead" ADD COLUMN "triageAttempts" INTEGER NOT NULL DEFAULT 0;

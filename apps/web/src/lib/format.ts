@@ -37,6 +37,9 @@ export const SOURCE_LABEL: Record<LeadSource, string> = {
 
 const gbp = new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 });
 export const formatGBP = (pence: number) => gbp.format(pence / 100);
+const gbpPence = new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP", minimumFractionDigits: 2, maximumFractionDigits: 2 });
+/** £4.20: for ratios, where the pence matter. */
+export const formatGBPExact = (pounds: number) => gbpPence.format(pounds);
 
 /** 0:42, 4:05, 39m, 1h 12m, 3d 4h: to the second while it matters, coarse once the lead is cold. */
 export function formatElapsed(ms: number) {
