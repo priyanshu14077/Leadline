@@ -2,12 +2,21 @@ import { randomUUID } from "node:crypto";
 import cors from "@fastify/cors";
 import Fastify, { type FastifyError, type FastifyServerOptions } from "fastify";
 import { ZodError } from "zod";
+import { demoRoutes } from "./routes/demo";
 import { practiceRoutes } from "./routes/practices";
 import { webhookRoutes } from "./routes/webhooks";
+import type { Classify } from "./triage";
 
 const REQUEST_ID = /^[\w-]{8,64}$/;
 
-export async function buildApp(opts: { logger?: FastifyServerOptions["logger"] } = {}) {
+type AppOptions = {
+  logger?: FastifyServerOptions["logger"];
+  classify?: Classify | null;
+  /** The demo form's signing route. Defaults to on outside production. */
+  demo?: boolean;
+};
+
+export async function buildApp(opts: AppOptions = {}) {
   const app = Fastify({
     logger: opts.logger ?? false,
     // Trust a well-formed x-request-id from the caller (an upstream proxy or platform), else mint one.
@@ -34,12 +43,13 @@ export async function buildApp(opts: { logger?: FastifyServerOptions["logger"] }
   // Browsers on the web app may call the API directly; nothing else may.
   await app.register(cors, {
     origin: process.env.WEB_ORIGIN ?? "http://localhost:3000",
-    methods: ["GET", "PATCH", "PUT"],
+    methods: ["GET", "POST", "PATCH", "PUT"],
     exposedHeaders: ["x-request-id"],
   });
 
   app.get("/health", async () => ({ ok: true }));
-  await app.register(webhookRoutes);
+  await app.register(webhookRoutes, { classify: opts.classify });
   await app.register(practiceRoutes, { prefix: "/practices" });
+  if (opts.demo ?? process.env.NODE_ENV !== "production") await app.register(demoRoutes);
   return app;
 }
