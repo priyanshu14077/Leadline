@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 const TABS = [
   { segment: "pipeline", label: "Pipeline" },
   { segment: "deliveries", label: "Deliveries" },
-  { segment: "attribution", label: "Attribution", coming: true },
+  { segment: "attribution", label: "Attribution" },
 ] as const;
 
 /** Reads the URL, so it sits behind its own Suspense boundary in the layout. */
@@ -25,18 +25,13 @@ export function AppTabs() {
             href={href}
             aria-current={active ? "page" : undefined}
             className={cn(
-              "relative inline-flex items-center gap-1.5 border-b-2 px-3 text-sm whitespace-nowrap transition-colors",
+              "relative inline-flex items-center border-b-2 px-3 text-sm whitespace-nowrap transition-colors",
               active
                 ? "border-rail-foreground font-semibold text-rail-foreground"
                 : "border-transparent text-rail-muted hover:text-rail-foreground",
             )}
           >
             {t.label}
-            {"coming" in t && (
-              <span className="type-label rounded-sm border border-rail-muted/50 px-1 text-[0.68rem] leading-4 text-rail-muted">
-                Coming
-              </span>
-            )}
           </Link>
         );
       })}
