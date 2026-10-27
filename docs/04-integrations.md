@@ -9,17 +9,17 @@ Sources were checked on 2026-10-26. Links are at the end of each section.
 | Concern | Implemented | Not implemented (what production needs) |
 |---|---|---|
 | Authentication | HMAC-SHA256 over raw bytes, `sha256=` hex, timing-safe compare, per-practice secret (`apps/api/src/signature.ts:6-17`) | Meta: verify `X-Hub-Signature-256` with the **App Secret** (one per app, not per clinic). Google: compare `google_key` in the body |
-| Tenant routing | `x-leadline-practice` header (`apps/api/src/routes/webhooks.ts:36`) | Map Meta `page_id` or Google `form_id`/`campaign_id` to a practice in a lookup table |
+| Tenant routing | `x-leadline-practice` header (`apps/api/src/routes/webhooks.ts:62`) | Map Meta `page_id` or Google `form_id`/`campaign_id` to a practice in a lookup table |
 | Subscription handshake | None | Meta `GET` with `hub.mode`/`hub.verify_token`/`hub.challenge` |
 | Lead data | Full lead in the body | Meta sends only `leadgen_id`: fetch the lead from the Graph API with a Page token |
-| Idempotency | Unique `(practiceId, source, sourceLeadId)` + ON CONFLICT (`apps/api/prisma/schema.prisma:62`) | Use Meta `leadgen_id` / Google `lead_id` as `sourceLeadId`. Handle Meta batches of many changes |
+| Idempotency | Unique `(practiceId, source, sourceLeadId)` + ON CONFLICT (`apps/api/prisma/schema.prisma:64`) | Use Meta `leadgen_id` / Google `lead_id` as `sourceLeadId`. Handle Meta batches of many changes |
 | Fast response | 200 within ~15 ms locally. Tracing is written after the response | Meta: ack the ping first and fetch the Graph API lead in a background job |
 | Out-of-order arrival | Not relevant: leads are created once and never updated by webhooks | Needed if platforms ever send updates: compare `created_time`/`updated_time` |
 | Replay protection | **None** | Signed timestamp + tolerance window, or a nonce store |
 | Body size | Fastify default 1 MiB, so 413 above it. Verified locally | Set an explicit `bodyLimit` (e.g. 256 KB) on the webhook plugin |
 | Test events | – | Google `is_test: true`: log it, don't create a real lead |
 | PII / UK GDPR | Synthetic data only (ADR-16) | Lawful basis + Article 9 condition, DPA with processors, retention, encryption, access logging |
-| AI on patient text | Not built | Paid Gemini tier or Vertex AI. Never the free tier for real enquiries |
+| AI on patient text | Built on the Gemini **free** tier, after the 200, synthetic data only (ADR-15, `apps/api/src/triage.ts`). Sends the first name and message only | Paid Gemini tier or Vertex AI with a DPA. Never the free tier for real enquiries |
 
 ## Meta Lead Ads
 
@@ -90,10 +90,10 @@ Sources: [Implementation](https://developers.google.com/google-ads/webhook/docs/
 
 The sender, not LeadLine, controls retry timing: Meta for up to 36 hours with decreasing frequency, Google on 5xx. A slow response looks like a failure, so:
 
-- Do the minimum before the 200: verify, insert idempotently, log, notify. LeadLine's handler does exactly this and writes trace spans after the response (`apps/api/src/routes/webhooks.ts:25-29`).
-- Anything slow goes after the 200 or into a queue: the Meta Graph API fetch, the planned AI triage (ADR-15).
-- Return 200 for duplicates (`apps/api/src/routes/webhooks.ts:77-78`). An error code on a duplicate triggers more retries.
-- Return 5xx only for transient faults you want retried (DB down). Return 4xx for permanent faults: bad payload (`webhooks.ts:54`, `:68`), bad auth (`:44`). Google stops on 4xx. Meta may keep retrying, so log it and alert.
+- Do the minimum before the 200: verify, insert idempotently, log, notify. LeadLine's handler does exactly this and writes trace spans and runs AI triage after the response (`apps/api/src/routes/webhooks.ts:30-51`).
+- Anything slow goes after the 200 or into a queue: the Meta Graph API fetch, and AI triage, which takes 15–20 s on the free tier and already runs after the 200 (ADR-15).
+- Return 200 for duplicates (`apps/api/src/routes/webhooks.ts:104-105`). An error code on a duplicate triggers more retries.
+- Return 5xx only for transient faults you want retried (DB down). Return 4xx for permanent faults: bad payload (`webhooks.ts:80`, `:94`), bad auth (`:70`). Google stops on 4xx. Meta may keep retrying, so log it and alert.
 
 ## Replay protection
 
@@ -117,7 +117,7 @@ What that means for a production LeadLine:
 
 - **Lawful basis + an Article 9 condition** (explicit consent on the ad form, or health-care purposes for the clinic as controller). The agency is likely a **processor** for the clinic and needs a DPA, with sub-processors (hosting, Gemini/Vertex) listed.
 - **Tenant isolation** is a legal control, not just a feature (ADR-10). Add Postgres RLS before real data.
-- **Minimise:** don't log message bodies. pino lines log ids and outcomes, not message text (`apps/api/src/routes/webhooks.ts:73-76`). Keep it that way.
+- **Minimise:** don't log message bodies. pino lines log ids and outcomes, not message text (`apps/api/src/routes/webhooks.ts:100-103`). Keep it that way.
 - **Retention:** delete or anonymise lost leads after a set period. `WebhookDelivery` and `TraceSpan` hold ids, not message text, but still need retention.
 - **Security:** auth on every endpoint (today there is none, see ADR-08), encryption at rest, access logging for who viewed a patient.
 - **International transfers:** sending UK patient text to a model hosted outside the UK is a restricted transfer. It needs adequacy, the IDTA/Addendum, or an exception. Pick a UK/EU region on Vertex where possible.
@@ -126,12 +126,12 @@ Sources: [ICO: what is special category data](https://ico.org.uk/for-organisatio
 
 ## Gemini free tier and patient data
 
-**Status: triage is planned, not built (ADR-15).**
+**Status: built on the free tier (ADR-15), for synthetic data only.** `geminiClassifier()` (`apps/api/src/triage.ts:52-76`) sends the first name and the enquiry text, nothing else. On 2026-10-26 we saw many 429s, a 503 "high demand" from `gemini-3.5-flash` (hence the `flash-lite` default) and 15–20 s per call.
 
 - **Free tier ("Unpaid Services"):** Google uses submitted content and responses "to provide, improve, and develop" its products, and "human reviewers may read, annotate, and process your API input and output". The terms say: "Do not submit sensitive, confidential, or personal information to the Unpaid Services."
 - **Paid tier:** prompts and responses are not used to improve products. They are logged for a limited period for abuse detection and processed under Google's Data Processing Addendum.
 - **Vertex AI:** "Google won't use your data to train or fine-tune any AI/ML models without your prior permission or instruction." Caching and abuse logging have their own settings.
-- **Rate limits** are per project (not per API key) and per model, measured as requests per minute, tokens per minute and requests per day. Daily quotas reset at midnight Pacific. Free-tier numbers are shown in AI Studio. Expect 429s under a burst. Triage must back off and leave the lead `PENDING`.
+- **Rate limits** are per project (not per API key) and per model, measured as requests per minute, tokens per minute and requests per day. Daily quotas reset at midnight Pacific. Free-tier numbers are shown in AI Studio. Expect 429s under a burst. Triage backs off and leaves the lead `PENDING`: a 429, 408 or 5xx is `TriageBusy`, which doesn't count as an attempt, and `bun run triage:sweep` retries with backoff up to 120 s (`apps/api/scripts/triage-sweep.ts:50`).
 
 Conclusion for the interview: the free tier is fine for this demo's synthetic leads (ADR-16). It is **not** acceptable for real patient enquiries. Those need the paid API or Vertex AI, a DPA, a UK/EU region where possible, and the minimum text needed.
 
