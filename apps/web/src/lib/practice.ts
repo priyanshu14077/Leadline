@@ -8,10 +8,9 @@ import { ApiError, SERVER_API_URL, serverApi } from "@/lib/api";
  * navigation. Per-instance memory cache (the default `use cache` store).
  *
  * On-demand revalidation: none today, on purpose (see docs/05-ui-ux-audit.md §5). If an admin flow
- * ever adds clinics, it calls revalidateTag("practices", "max") from a server action. If attribution
- * becomes a cached page, its tag (`attribution:${slug}`) is where a webhook-triggered revalidation
- * would hook in: a secret-protected route handler the API calls on stage/value changes, kept behind a
- * time-based cacheLife backstop. Not justified while there is one web process and the query is cheap.
+ * ever adds clinics, it calls revalidateTag("practices", "max") from a server action. Attribution was
+ * the candidate for webhook-triggered revalidation; it stays dynamic instead, because it changes with
+ * every drag and the live stream already tells the page when to refetch.
  */
 export async function practiceDirectory(): Promise<Practice[]> {
   "use cache";
