@@ -139,15 +139,15 @@ function DrawerBody({ practiceSlug, lead, onSaved, onMove, onClose }: Omit<Props
 
 function Triage({ lead }: { lead: LeadCard }) {
   if (lead.triageStatus !== "DONE") {
+    const failed = lead.triageStatus === "FAILED";
     return (
       <Section title="AI triage">
         <div className="rounded-lg border border-dashed px-3.5 py-3 text-sm">
-          <p className="font-medium">
-            Not triaged yet <span className="type-label ml-1 rounded-sm border px-1 text-[0.65rem] text-muted-foreground">Coming next</span>
-          </p>
+          <p className="font-medium">{failed ? "Triage failed" : "Waiting for triage"}</p>
           <p className="mt-1 text-muted-foreground">
-            When triage is built, it will read the enquiry and suggest the treatment, urgency, likely concerns and an opening
-            line for the call.
+            {failed
+              ? "The model's answer couldn't be used. The sweeper tries again, up to 3 times. Read the enquiry above in the meantime."
+              : "Gemini reads the enquiry after it's saved. The result appears here by itself, usually within half a minute."}
           </p>
         </div>
       </Section>
