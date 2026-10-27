@@ -54,9 +54,9 @@ function Hero() {
               </a>
             </li>
             <li>
-              <a href="#next" className="hover:text-rail-foreground">
-                Coming next
-              </a>
+              <Link href="/demo/form" className="hover:text-rail-foreground">
+                Try the ad form
+              </Link>
             </li>
           </ul>
           <Link
@@ -85,9 +85,9 @@ function Hero() {
           </p>
           <div className="mt-7 flex flex-wrap items-center gap-x-6 gap-y-3">
             <PrimaryCta />
-            <a href="#how" className="text-sm font-medium text-rail-foreground underline decoration-white/40 hover:decoration-white">
-              How it works
-            </a>
+            <Link href="/demo/form" className="text-sm font-medium text-rail-foreground underline decoration-white/40 hover:decoration-white">
+              Send yourself a lead
+            </Link>
           </div>
         </div>
 
@@ -213,6 +213,17 @@ const FEATURES: { title: string; body: string; demo: React.ReactNode }[] = [
     ),
   },
   {
+    title: "AI reads the enquiry",
+    body: "Gemini reads each new enquiry once it's saved and suggests the treatment, the urgency, the patient's concerns and an opening line for the call. A slow or failed model call never holds up the lead.",
+    demo: (
+      <div className="flex flex-wrap items-center gap-1.5 text-xs">
+        <span className="rounded-sm bg-brand-soft px-1.5 py-0.5 font-medium text-brand">Invisalign</span>
+        <span className="rounded-sm bg-overdue-soft px-1.5 py-0.5 text-overdue">Urgent</span>
+        <span className="rounded-sm border px-1.5 py-0.5 text-muted-foreground">Concern: price</span>
+      </div>
+    ),
+  },
+  {
     title: "One lead, once",
     body: "Retries of the same lead are caught by the database, not by hope. The delivery log shows every attempt, so three deliveries visibly become one lead.",
     demo: (
@@ -241,6 +252,18 @@ const FEATURES: { title: string; body: string; demo: React.ReactNode }[] = [
           </div>
         ))}
       </div>
+    ),
+  },
+  {
+    title: "Which campaign made money",
+    body: "Each campaign followed past the form fill to booked consults and accepted plans: cost per booked consult, and treatment value back per £1 of ad spend.",
+    demo: (
+      <dl className="grid grid-cols-2 gap-x-6 text-sm">
+        <dt className="type-label text-[0.72rem] text-muted-foreground">Cost per consult</dt>
+        <dt className="type-label text-[0.72rem] text-muted-foreground">Back per £1</dt>
+        <dd className="font-mono text-lg tabular-nums">£48</dd>
+        <dd className="font-mono text-lg font-semibold tabular-nums">£6.40</dd>
+      </dl>
     ),
   },
   {
@@ -282,33 +305,6 @@ function Built() {
           </li>
         ))}
       </ul>
-    </section>
-  );
-}
-
-const NEXT = [
-  { title: "AI triage", body: "Read each enquiry and suggest the treatment, the urgency, likely concerns and an opening line for the call." },
-  { title: "Attribution", body: "Cost per booked consult and treatment value per £1 of ad spend, by campaign: clicks against revenue." },
-  { title: "Try-it ad form", body: "Fill in a sample lead form yourself and watch the card land on the board." },
-];
-
-function ComingNext() {
-  return (
-    <section id="next" aria-labelledby="next-title" className="scroll-mt-6 bg-surface">
-      <div className="mx-auto max-w-6xl px-5 py-20 sm:px-8 lg:py-24">
-        <h2 id="next-title" className="text-[clamp(1.9rem,3.6vw,2.75rem)] leading-[1.08] font-semibold tracking-[-0.015em]">
-          Coming next
-        </h2>
-        <p className="mt-3 max-w-prose text-muted-foreground">Not built yet. Listed so nothing on this page overstates what LeadLine does today.</p>
-        <ul className="mt-10 grid gap-x-10 gap-y-6 md:grid-cols-3">
-          {NEXT.map((n) => (
-            <li key={n.title} className="border-t-2 border-dashed border-muted-foreground/35 pt-4">
-              <h3 className="font-semibold text-muted-foreground">{n.title}</h3>
-              <p className="mt-1.5 text-sm text-muted-foreground">{n.body}</p>
-            </li>
-          ))}
-        </ul>
-      </div>
     </section>
   );
 }
@@ -386,7 +382,6 @@ export default function Landing() {
         <Problem />
         <HowItWorks />
         <Built />
-        <ComingNext />
         <Technical />
       </main>
       <Close />
