@@ -2,7 +2,13 @@
 
 This is the brief for the next (design) agent. It is based on the running app (web :3000, API :4000) driven headless with Playwright + local Chrome on 2026-10-26, and on the code. Read §1 and §8 first. §2–§7 give the reasons and the detail.
 
-**Honesty rule for every screen:** AI triage, attribution, the triage eval and the fake ad form are **not built**. Don't design them as working. Where they appear, label them "Coming" and give them no fake data.
+**Honesty rule for every screen:** show only what is built, and never fake data. When this audit was written, AI triage, attribution, the triage eval and the fake ad form were not built, so it asked for them to be labelled "Coming". The rule still holds; those four are now built (see the note below).
+
+> **Update, 2026-10-26 (day 2).** Triage, attribution and the form are now built. This audit is kept as written; read its "Coming" items as history.
+> - **AI triage** runs after the webhook's 200 (ADR-15). The card shows a triage chip once the model answers. The lead drawer shows the opener and fields when `DONE`, "Waiting for triage" while `PENDING`, and "Triage failed" when `FAILED` (`apps/web/src/components/board/lead-drawer.tsx:146`).
+> - **Attribution** at `/app/[practice]/attribution` shows live numbers. The tab has no "Coming" badge (`apps/web/src/components/app/app-tabs.tsx:10`). It is **not** cached: §5's `use cache` suggestion was dropped, because the page changes with every drag and refetches on stream events (ADR-21).
+> - **The ad form** at `/demo/form` posts to the API's `POST /demo/leads`, which signs server-side. The web app still holds no secret. This replaces the server-action signing suggested in §3 and §5 (ADR-22).
+> - The landing page's "Coming next" section is gone; triage and attribution are listed as built.
 
 ## 0. Screenshots
 
