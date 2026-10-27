@@ -1,23 +1,28 @@
 import { leadPayload } from "@leadline/shared";
-import type { FastifyPluginAsync } from "fastify";
+import type { FastifyPluginAsync, FastifyRequest } from "fastify";
 import { ingestLead, logRejected } from "../ingest";
 import { findPractice } from "../practice";
 import { PRACTICE_HEADER, SIGNATURE_HEADER, verify } from "../signature";
 import { RequestTrace, saveSpans } from "../trace";
+import { triageLead, type Classify } from "../triage";
 
 declare module "fastify" {
   interface FastifyRequest {
     trace: RequestTrace;
+    /** Set when this request created a lead, so triage runs once the response is sent. */
+    createdLeadId: string | null;
   }
 }
 
-export const webhookRoutes: FastifyPluginAsync = async (app) => {
+/** classify is the triage model; without it (tests, no API key) leads stay PENDING for the sweeper. */
+export const webhookRoutes: FastifyPluginAsync<{ classify?: Classify | null }> = async (app, { classify }) => {
   // Scoped to this plugin: keep the body as the exact bytes received, because the HMAC is over
   // those bytes. Re-serialising parsed JSON would change them.
   app.removeAllContentTypeParsers();
   app.addContentTypeParser("*", { parseAs: "string" }, (_req, body, done) => done(null, body));
 
   app.decorateRequest("trace", null as unknown as RequestTrace);
+  app.decorateRequest("createdLeadId", null);
   app.addHook("onRequest", async (req) => {
     req.trace = new RequestTrace(req.id);
     req.trace.mark("request received", `${req.method} ${req.url}`);
@@ -25,7 +30,28 @@ export const webhookRoutes: FastifyPluginAsync = async (app) => {
   // Spans are written after the response is on the wire, so the platform never waits for them.
   app.addHook("onResponse", async (req, reply) => {
     req.trace.mark("response sent", `HTTP ${reply.statusCode}`);
-    if (req.trace.practiceId) await saveSpans(req.trace.practiceId, req.trace.traceId, req.trace.spans);
+    const practiceId = req.trace.practiceId;
+    if (practiceId) await saveSpans(practiceId, req.trace.traceId, req.trace.spans);
+    if (practiceId && req.createdLeadId && classify) runTriage(practiceId, req.createdLeadId, req);
+  });
+
+  // Triage runs after the 200, so a slow or failing model call can never cost the platform a retry
+  // or lose a lead. Its spans join the webhook's trace, on the same clock.
+  const inFlight = new Set<Promise<void>>();
+  function runTriage(practiceId: string, leadId: string, req: FastifyRequest) {
+    const trace = new RequestTrace(req.trace.traceId, req.trace.startedAt);
+    const job = triageLead(practiceId, leadId, classify!, trace)
+      .then(async (outcome) => {
+        req.log.info({ leadId, outcome }, "lead triaged");
+        await saveSpans(practiceId, trace.traceId, trace.spans);
+      })
+      .catch((err) => req.log.error({ err, leadId }, "triage crashed"))
+      .finally(() => inFlight.delete(job));
+    inFlight.add(job);
+  }
+  // Let running triage finish on shutdown instead of cutting it off mid-write.
+  app.addHook("onClose", async () => {
+    await Promise.all(inFlight);
   });
 
   app.post("/webhooks/leads", async (req, reply) => {
@@ -70,6 +96,7 @@ export const webhookRoutes: FastifyPluginAsync = async (app) => {
     trace.mark("payload validated", `${parsed.data.source} ${parsed.data.sourceLeadId}`);
 
     const result = await ingestLead(practice.id, parsed.data, trace);
+    if (result.outcome === "CREATED") req.createdLeadId = result.leadId;
     req.log.info(
       { practice: practice.slug, source: parsed.data.source, sourceLeadId: parsed.data.sourceLeadId, outcome: result.outcome, leadId: result.leadId },
       "webhook ingested",
