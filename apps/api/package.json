@@ -12,6 +12,8 @@
     "db:studio": "prisma studio",
     "demo:reset": "prisma migrate reset --force && prisma db seed",
     "simulate": "tsx --env-file=../../.env scripts/simulate.ts",
+    "triage:sweep": "tsx --env-file=../../.env scripts/triage-sweep.ts",
+    "triage:eval": "tsx --env-file=../../.env scripts/eval-triage.ts",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "typecheck": "tsc --noEmit"

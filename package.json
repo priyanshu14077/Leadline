@@ -13,6 +13,8 @@
     "db:studio": "bun run --filter '@leadline/api' db:studio",
     "demo:reset": "bun run --filter '@leadline/api' demo:reset",
     "simulate": "bun run --cwd apps/api simulate",
+    "triage:sweep": "bun run --cwd apps/api triage:sweep",
+    "triage:eval": "bun run --cwd apps/api triage:eval",
     "test": "bun run --filter '@leadline/api' test",
     "typecheck": "bun run --filter '*' typecheck",
     "lint": "bun run --filter '@leadline/web' lint"
