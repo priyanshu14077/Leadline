@@ -54,6 +54,8 @@ model Lead {
   treatmentAcceptedAt DateTime?
   treatmentValuePence Int?
   triageStatus        TriageStatus @default(PENDING)
+  // Failed model calls so far. The sweeper stops retrying at a cap; rate limits don't count.
+  triageAttempts      Int          @default(0)
   treatmentInterest   Treatment?
   urgency             Urgency?
   objections          Objection[]
